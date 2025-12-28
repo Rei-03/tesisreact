@@ -1,5 +1,6 @@
 // app/layout.js
 import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from 'sonner';
 import './globals.css';
 import LayoutClientWrapper from './LayoutClientWrapper';
 
@@ -12,6 +13,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <body className="bg-slate-50 text-slate-900">
+        <Toaster position="top-right" richColors />
         <AuthProvider>
           <LayoutClientWrapper>
             {children}
