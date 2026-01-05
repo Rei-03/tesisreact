@@ -1,7 +1,16 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/app/*": ["./app/*"],
+      "@/components/*": ["./components/*"],
+      "@/contexts/*": ["./contexts/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/data/*": ["./data/*"],
+      "@/services/*": ["./services/*"],
+      "@/public/*": ["./public/*"],
+      "@/types": ["./types.ts"]
     }
   }
 }
