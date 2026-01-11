@@ -41,16 +41,16 @@ export default function DashboardPage() {
 
   const cargarDatos = async () => {
     try {
-      setCargando(false);
+      setCargando(true);
       const hoy = getToday();
       const [circ, asg, prox] = await Promise.all([
         apiClient.circuitos.getApagables(),
         apiClient.aseguramientos.getByFecha(hoy),
         apiClient.proximasAperturas.getAll(),
       ]);
-      setCircuitos(circ);
-      setAseguramientos(asg);
-      setProxAperturas(prox);
+      setCircuitos(circ || []);
+      setAseguramientos(asg || []);
+      setProxAperturas(prox || []);
     } catch (err) {
       console.error("Error loading dashboard data:", err);
     } finally {

@@ -3,7 +3,6 @@ import { useAuth } from "@/contexts/AuthContext"; // Importamos el hook de auth
 import {
   FileBarChart,
   LayoutDashboard,
-  Map,
   Settings,
   ShieldCheck,
   Users,
@@ -21,7 +20,6 @@ export default function Sidebar() {
       href: "/dashboard",
     },
     { name: "Circuitos", icon: <Zap size={20} />, href: "/circuitos" },
-    { name: "Mapa CFG", icon: <Map size={20} />, href: "/mapa" },
     {
       name: "Aseguramientos",
       icon: <ShieldCheck size={20} />,

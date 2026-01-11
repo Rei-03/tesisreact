@@ -19,7 +19,7 @@ export default function AseguramientosPage() {
   // ESTADOS
   const [aseguramientos, setAseguramientos] = useState([]);
   const [circuitos, setCircuitos] = useState([]);
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(getToday());
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -60,11 +60,20 @@ export default function AseguramientosPage() {
   };
 
   // FILTRAR POR FECHA
+  const fechaComparacion = fechaSeleccionada instanceof Date ? fechaSeleccionada : new Date(fechaSeleccionada);
   const aseguramientosActivos = aseguramientos.filter(
-    (a) => a.fechaInicial <= fechaSeleccionada && a.fechaFinal >= fechaSeleccionada
+    (a) => {
+      const fechaIni = a.fechaInicial instanceof Date ? a.fechaInicial : new Date(a.fechaInicial);
+      const fechaFin = a.fechaFinal instanceof Date ? a.fechaFinal : new Date(a.fechaFinal);
+      return fechaIni <= fechaComparacion && fechaFin >= fechaComparacion;
+    }
   );
   const aseguramientosPaginados = aseguramientosActivos
-    .sort((a, b) => b.fechaFinal.getTime() - a.fechaFinal.getTime())
+    .sort((a, b) => {
+      const fechaFinA = a.fechaFinal instanceof Date ? a.fechaFinal : new Date(a.fechaFinal);
+      const fechaFinB = b.fechaFinal instanceof Date ? b.fechaFinal : new Date(b.fechaFinal);
+      return fechaFinB.getTime() - fechaFinA.getTime();
+    })
     .slice((pagina - 1) * aseguramientosPorPagina, pagina * aseguramientosPorPagina);
 
   const totalMW = aseguramientosActivos.reduce((sum, a) => sum + (a.mw || 0), 0);
@@ -144,9 +153,10 @@ export default function AseguramientosPage() {
     const hoja = XLSX.utils.json_to_sheet(datosFormateados);
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, "Aseguramientos");
+    const nombreFecha = fechaSeleccionada instanceof Date ? formatDateDisplay(fechaSeleccionada) : formatDateDisplay(new Date(fechaSeleccionada));
     XLSX.writeFile(
       libro,
-      `Aseguramientos_${formatDateDisplay(fechaSeleccionada)}.xlsx`
+      `Aseguramientos_${nombreFecha}.xlsx`
     );
   };
 
@@ -207,7 +217,11 @@ export default function AseguramientosPage() {
           <span className="font-medium text-slate-700">Mostrar aseguramientos para la fecha:</span>
           <input
             type="date"
-            value={fechaSeleccionada.toISOString().split("T")[0]}
+            value={
+              fechaSeleccionada instanceof Date
+                ? `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, "0")}-${String(fechaSeleccionada.getDate()).padStart(2, "0")}`
+                : new Date().toISOString().split("T")[0]
+            }
             onChange={(e) => {
               setFechaSeleccionada(new Date(e.target.value));
               setPagina(1);
@@ -474,8 +488,8 @@ export default function AseguramientosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {aseguramientosPrueba.map((item) => (
-              <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+            {aseguramientosPaginados.map((item, idx) => (
+              <tr key={`${item.id_CircuitoP}-${idx}`} className="hover:bg-slate-50 transition-colors">
                 <td className="p-4">
                   <div className="font-bold text-slate-700">
                     {item.circuito}
