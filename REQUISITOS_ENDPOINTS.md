@@ -143,21 +143,7 @@ Este documento detalla qué información necesitamos de tus bases de datos para 
 
 ---
 
-## 🗺️ Mapa
 
-### `GET /api/mapa/circuitos`
-
-**Tabla:** `circuitos`
-
-**Campos necesarios:**
-
-- `id` (int)
-- `codigo` (string)
-- `nombre` o `zona` (string)
-- `estado` (string)
-- `mw` (decimal)
-- `coordenadas_lat` (decimal)
-- `coordenadas_lng` (decimal)
 
 **Filtros:**
 

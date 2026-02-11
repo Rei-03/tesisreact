@@ -6,9 +6,12 @@ import {
   MapPin,
   Filter,
   ChevronDown,
+  Zap,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { apiClient } from "@/lib/api/apiClient";
+import { generarRotacion } from "@/lib/services/rotacionService";
+import RotacionModal from "@/components/RotacionModal";
 import { 
   filtrarCircuitosApagables, 
   ordenarPorNombre,
@@ -23,6 +26,8 @@ export default function CircuitosPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [pagina, setPagina] = useState(1);
+  const [modalRotacionAbierto, setModalRotacionAbierto] = useState(false);
+  const [mensajeRotacion, setMensajeRotacion] = useState(null);
   const circuitosPorPagina = 10;
 
   // CARGAR DATOS
@@ -40,6 +45,26 @@ export default function CircuitosPage() {
       setError("Error cargando circuitos: " + (err?.message || "Error desconocido"));
     } finally {
       setCargando(false);
+    }
+  };
+
+  const manejarConfirmarRotacion = async (datos) => {
+    try {
+      // Llamar al servicio
+      const respuesta = await generarRotacion(datos);
+      
+      setMensajeRotacion({
+        tipo: "éxito",
+        texto: `Rotación insertada exitosamente con ${datos.cantidad_circuitos} circuito(s) y ${datos.mw_total.toFixed(2)} MW.`
+      });
+      
+      console.log("Rotación confirmada:", respuesta);
+    } catch (error) {
+      console.error("Error confirmando rotación:", error);
+      setMensajeRotacion({
+        tipo: "error",
+        texto: "Error al confirmar la rotación: " + (error?.message || "Error desconocido")
+      });
     }
   };
 
@@ -104,13 +129,42 @@ export default function CircuitosPage() {
             {circuitosFiltrados.length} circuito(s) mostrado(s) · {totalClientes.toLocaleString()} clientes
           </p>
         </div>
-        <button
-          onClick={() => exportarAExcel(circuitosFiltrados, "Circuitos_Reporte")}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
-        >
-          <FileSpreadsheet size={18} /> Exportar
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setModalRotacionAbierto(true)}
+            disabled={circuitosFiltrados.length === 0}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-400 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+          >
+            <Zap size={18} />
+            Generar Rotación
+          </button>
+          <button
+            onClick={() => exportarAExcel(circuitosFiltrados, "Circuitos_Reporte")}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+          >
+            <FileSpreadsheet size={18} /> Exportar
+          </button>
+        </div>
       </div>
+
+      {/* MENSAJE DE ROTACIÓN */}
+      {mensajeRotacion && (
+        <div
+          className={`p-4 rounded-lg border flex items-start gap-3 ${
+            mensajeRotacion.tipo === "éxito"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
+          }`}
+        >
+          <AlertCircle size={20} className="mt-0.5 shrink-0" />
+          <div>
+            <p className="font-bold">
+              {mensajeRotacion.tipo === "éxito" ? "Éxito" : "Error"}
+            </p>
+            <p className="text-sm">{mensajeRotacion.texto}</p>
+          </div>
+        </div>
+      )}
 
       {/* FILTROS */}
       <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
@@ -267,6 +321,14 @@ export default function CircuitosPage() {
           </div>
         </div>
       )}
+
+      {/* MODAL DE ROTACIÓN */}
+      <RotacionModal
+        isOpen={modalRotacionAbierto}
+        onClose={() => setModalRotacionAbierto(false)}
+        circuitosDisponibles={circuitosFiltrados}
+        onConfirmar={manejarConfirmarRotacion}
+      />
     </div>
   );
 }

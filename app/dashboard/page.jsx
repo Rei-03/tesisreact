@@ -23,6 +23,8 @@ import {
   YAxis,
 } from "recharts";
 import { apiClient } from "@/lib/api/apiClient";
+import { generarRotacion } from "@/lib/services/rotacionService";
+import RotacionModal from "@/components/RotacionModal";
 import {
   calcularTotalClientes,
   calcularMWPorBloque,
@@ -34,6 +36,8 @@ export default function DashboardPage() {
   const [aseguramientos, setAseguramientos] = useState([]);
   const [proxAperturas, setProxAperturas] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [modalRotacionAbierto, setModalRotacionAbierto] = useState(false);
+  const [mensajeRotacion, setMensajeRotacion] = useState(null);
 
   useEffect(() => {
     cargarDatos();
@@ -55,6 +59,26 @@ export default function DashboardPage() {
       console.error("Error loading dashboard data:", err);
     } finally {
       setCargando(false);
+    }
+  };
+
+  const manejarConfirmarRotacion = async (datos) => {
+    try {
+      // Llamar al servicio
+      const respuesta = await generarRotacion(datos);
+      
+      setMensajeRotacion({
+        tipo: "éxito",
+        texto: `Rotación insertada exitosamente con ${datos.cantidad_circuitos} circuito(s) y ${datos.mw_total.toFixed(2)} MW.`
+      });
+      
+      console.log("Rotación confirmada:", respuesta);
+    } catch (error) {
+      console.error("Error confirmando rotación:", error);
+      setMensajeRotacion({
+        tipo: "error",
+        texto: "Error al confirmar la rotación: " + (error?.message || "Error desconocido")
+      });
     }
   };
 
@@ -94,10 +118,39 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-slate-800">Panel de Control</h2>
-        <p className="text-slate-500 text-sm mt-1">Provincia: CFG · Estado del sistema en tiempo real</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-800">Panel de Control</h2>
+          <p className="text-slate-500 text-sm mt-1">Provincia: CFG · Estado del sistema en tiempo real</p>
+        </div>
+        <button
+          onClick={() => setModalRotacionAbierto(true)}
+          disabled={circuitos.length === 0}
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-400 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+        >
+          <Zap size={18} />
+          Generar Rotación
+        </button>
       </div>
+
+      {/* MENSAJE DE ROTACIÓN */}
+      {mensajeRotacion && (
+        <div
+          className={`p-4 rounded-lg border flex items-start gap-3 ${
+            mensajeRotacion.tipo === "éxito"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
+          }`}
+        >
+          <AlertTriangle size={20} className="mt-0.5 shrink-0" />
+          <div>
+            <p className="font-bold">
+              {mensajeRotacion.tipo === "éxito" ? "Éxito" : "Error"}
+            </p>
+            <p className="text-sm">{mensajeRotacion.texto}</p>
+          </div>
+        </div>
+      )}
 
       {/* TARJETAS DE RESUMEN */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -252,6 +305,14 @@ export default function DashboardPage() {
           </table>
         </div>
       </div>
+
+      {/* MODAL DE ROTACIÓN */}
+      <RotacionModal
+        isOpen={modalRotacionAbierto}
+        onClose={() => setModalRotacionAbierto(false)}
+        circuitosDisponibles={circuitos}
+        onConfirmar={manejarConfirmarRotacion}
+      />
     </div>
   );
 }

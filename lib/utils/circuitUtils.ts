@@ -23,7 +23,7 @@ export interface Apertura {
  * Filtra circuitos que son apagables
  */
 export function filtrarCircuitosApagables(circuitos: Circuito[]): Circuito[] {
-  return circuitos.filter((c) => c.apagable === true);
+  return circuitos.filter((c) => c.apagable === true || c.Apagable === true);
 }
 
 /**
