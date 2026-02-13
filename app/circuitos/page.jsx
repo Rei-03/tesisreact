@@ -18,6 +18,7 @@ import {
   filtrarPorBloque,
   calcularTotalClientes 
 } from "@/lib/utils/circuitUtils";
+import { obtenerBloques } from "@/lib/utils/circuitUtils";
 
 export default function CircuitosPage() {
   const [circuitos, setCircuitos] = useState([]);
@@ -104,9 +105,7 @@ export default function CircuitosPage() {
   };
 
   const totalClientes = calcularTotalClientes(circuitosFiltrados);
-  const bloques = Array.from(
-    new Set(circuitos.filter(c => c.Bloque).map(c => c.Bloque))
-  ).sort((a, b) => (a || 0) - (b || 0));
+  const bloques = obtenerBloques(circuitos);
 
   if (cargando) {
     return (
@@ -195,7 +194,7 @@ export default function CircuitosPage() {
             <select
               value={bloqueSeleccionado || ""}
               onChange={(e) => {
-                setBloqueSeleccionado(e.target.value ? Number(e.target.value) : null);
+                setBloqueSeleccionado(e.target.value ? e.target.value : null);
                 setPagina(1);
               }}
               className="w-full p-3 border rounded-lg appearance-none bg-white cursor-pointer hover:border-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"

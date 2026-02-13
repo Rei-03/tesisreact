@@ -40,17 +40,24 @@ export function ordenarPorNombre(circuitos: Circuito[]): Circuito[] {
  */
 export function filtrarPorBloque(
   circuitos: Circuito[],
-  bloque: string | null
+  bloque: string | number | null
 ): Circuito[] {
-  if (!bloque) return circuitos;
-  return circuitos.filter((c) => c.bloque === bloque);
+  if (bloque === null || bloque === undefined || bloque === "") return circuitos;
+  const bloqueStr = String(bloque);
+  return circuitos.filter((c) => {
+    const b = c.Bloque ?? c.bloque ?? c.bloqueId ?? null;
+    return b !== null && String(b) === bloqueStr;
+  });
 }
 
 /**
  * Calcula el total de clientes en una lista de circuitos
  */
 export function calcularTotalClientes(circuitos: Circuito[]): number {
-  return circuitos.reduce((sum, c) => sum + (c.clientes || 0), 0);
+  return circuitos.reduce((sum, c) => {
+    const clientes = c.Clientes ?? c.clientes ?? 0;
+    return sum + (Number(clientes) || 0);
+  }, 0);
 }
 
 /**
@@ -74,16 +81,25 @@ export function calcularMWPorBloque(aperturas: Apertura[]): Record<string, numbe
 export function obtenerBloques(circuitos: Circuito[]): string[] {
   const bloques = new Set<string>();
   circuitos.forEach((c) => {
-    if (c.bloque) bloques.add(c.bloque);
+    const b = c.Bloque ?? c.bloque ?? null;
+    if (b !== null && b !== undefined && b !== "") bloques.add(String(b));
   });
-  return Array.from(bloques).sort();
+  return Array.from(bloques).sort((a, b) => {
+    // intenta ordenar numéricamente si son números
+    const na = Number(a);
+    const nb = Number(b);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+    return a.localeCompare(b);
+  });
 }
 
 /**
  * Valida si un circuito puede ser apagado
  */
 export function puedeSerApagado(circuito: Circuito): boolean {
-  return circuito.apagable === true && (circuito.clientes || 0) > 0;
+  const apag = circuito.apagable ?? circuito.Apagable ?? false;
+  const clientes = circuito.Clientes ?? circuito.clientes ?? 0;
+  return apag === true && (Number(clientes) || 0) > 0;
 }
 
 /**
