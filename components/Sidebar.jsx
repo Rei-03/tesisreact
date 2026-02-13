@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 
 export default function Sidebar() {
-  const { user } = useAuth(); // Extraemos los datos del usuario logueado
+  const { user, isAdmin } = useAuth(); // Extraemos los datos del usuario logueado
 
   const menuItems = [
     {
@@ -29,8 +29,7 @@ export default function Sidebar() {
   ];
 
   // AGREGAR BOTÓN DE USUARIOS SOLO SI ES ADMIN
-  // Nota: Ajusta 'admin' según cómo lo guarde tu AuthContext (ej. user.role === 'admin')
-  if (user?.role === "admin") {
+  if (user && isAdmin && isAdmin()) {
     menuItems.push({
       name: "Gestión Usuarios",
       icon: <Users size={20} />,

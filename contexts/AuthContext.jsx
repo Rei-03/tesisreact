@@ -22,6 +22,18 @@ export function AuthProvider({ children }) {
           console.error("Error parsing user data:", e);
         }
       }
+    } else {
+      // MODO DEMO: Si no hay usuario, crear un admin automáticamente
+      const demoUser = {
+        id: 1,
+        nombre: "Brayan Castellano",
+        login: "bcastellano",
+        rol: "admin",
+      };
+      setIsAuthenticated(true);
+      setUser(demoUser);
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("userData", JSON.stringify(demoUser));
     }
     setIsLoading(false);
   }, []);
@@ -40,8 +52,12 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("userData");
   };
 
+  const isAdmin = () => {
+    return user?.rol === "admin" || user?.role === "admin";
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, user }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, user, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
