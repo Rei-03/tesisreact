@@ -261,3 +261,162 @@ export const proxAperturasMock: ProxAperturaReal[] = [
     Bloque: 3
   }
 ];
+
+// Mock de reportes de rotaciones generados
+export const reportesMock = [
+  {
+    id: 1,
+    idRotacion: "ROT-2026-001",
+    fecha: new Date(2026, 0, 4, 14, 30),
+    tipo: "Rotación Programada",
+    bloque: 1,
+    generadoPor: "Juan Pérez",
+    usuario: "jperez",
+    cantidadCircuitos: 4,
+    cantidad_circuitos: 4,
+    circuitos: [
+      { idCircuito: 101, nombre: "Circuito Comercial Centro", mw: 18.5 },
+      { idCircuito: 102, nombre: "Circuito Espartaco", mw: 22.1 },
+      { idCircuito: 107, nombre: "Circuito Residencial Pérez Leyva", mw: 19.7 },
+      { idCircuito: 111, nombre: "Circuito Santa Elena", mw: 14.2 }
+    ],
+    mwTotal: 74.5,
+    mw_total: 74.5,
+    duracion: "2 horas",
+    observaciones: "Rotación normal ejecutada según cronograma",
+    estado: "Completada"
+  },
+  {
+    id: 2,
+    idRotacion: "ROT-2026-002",
+    fecha: new Date(2026, 0, 3, 10, 15),
+    tipo: "Rotación Programada",
+    bloque: 2,
+    generadoPor: "María García",
+    usuario: "mgarcia",
+    cantidadCircuitos: 3,
+    cantidad_circuitos: 3,
+    circuitos: [
+      { idCircuito: 104, nombre: "Circuito Cruces", mw: 8.9 },
+      { idCircuito: 112, nombre: "Circuito Industrial Sur", mw: 25.1 },
+      { idCircuito: 105, nombre: "Circuito Oeste Industrial", mw: 15.2 }
+    ],
+    mwTotal: 49.2,
+    mw_total: 49.2,
+    duracion: "2 horas",
+    observaciones: "Sin incidencias reportadas",
+    estado: "Completada"
+  },
+  {
+    id: 3,
+    idRotacion: "ROT-2026-003",
+    fecha: new Date(2026, 0, 2, 16, 45),
+    tipo: "Rotación Programada",
+    bloque: 3,
+    generadoPor: "Carlos López",
+    usuario: "clopez",
+    cantidadCircuitos: 4,
+    cantidad_circuitos: 4,
+    circuitos: [
+      { idCircuito: 109, nombre: "Circuito Educativo", mw: 11.6 },
+      { idCircuito: 106, nombre: "Circuito Reserva Puerto", mw: 8.3 },
+      { idCircuito: 110, nombre: "Circuito Residencial Oeste", mw: 16.8 },
+      { idCircuito: 113, nombre: "Circuito Comercial Este", mw: 19.4 }
+    ],
+    mwTotal: 56.1,
+    mw_total: 56.1,
+    duracion: "2 horas",
+    observaciones: "Protocolo ejecutado correctamente",
+    estado: "Completada"
+  },
+  {
+    id: 4,
+    idRotacion: "ROT-2026-004",
+    fecha: new Date(2026, 0, 1, 8, 0),
+    tipo: "Rotación Programada",
+    bloque: 1,
+    generadoPor: "Juan Pérez",
+    usuario: "jperez",
+    cantidadCircuitos: 3,
+    cantidad_circuitos: 3,
+    circuitos: [
+      { idCircuito: 101, nombre: "Circuito Comercial Centro", mw: 18.5 },
+      { idCircuito: 102, nombre: "Circuito Espartaco", mw: 22.1 },
+      { idCircuito: 107, nombre: "Circuito Residencial Pérez Leyva", mw: 19.7 }
+    ],
+    mwTotal: 60.3,
+    mw_total: 60.3,
+    duracion: "2 horas",
+    observaciones: "Inicio de operaciones del día",
+    estado: "Completada"
+  },
+  {
+    id: 5,
+    idRotacion: "ROT-2025-365",
+    fecha: new Date(2025, 11, 31, 22, 30),
+    tipo: "Rotación Programada",
+    bloque: 2,
+    generadoPor: "María García",
+    usuario: "mgarcia",
+    cantidadCircuitos: 2,
+    cantidad_circuitos: 2,
+    circuitos: [
+      { idCircuito: 104, nombre: "Circuito Cruces", mw: 8.9 },
+      { idCircuito: 112, nombre: "Circuito Industrial Sur", mw: 25.1 }
+    ],
+    mwTotal: 34.0,
+    mw_total: 34.0,
+    duracion: "2 horas",
+    observaciones: "Último reporte del año 2025",
+    estado: "Completada"
+  }
+];
+
+// Mock de aseguramientos por reportar
+export const aseguramientosReporteMock = [
+  {
+    id: 1,
+    circuito: "Circuito Hospitalario Provincial",
+    mw: 15.7,
+    tipo: "Permanente",
+    fechaInicial: new Date(2026, 0, 1),
+    fechaFinal: new Date(2026, 11, 31),
+    observaciones: "Protección hospitalaria prioritaria - Servicios de emergencia 24/7"
+  },
+  {
+    id: 2,
+    circuito: "Circuito Castillo de Jagua",
+    mw: 8.5,
+    tipo: "Permanente",
+    fechaInicial: new Date(2026, 0, 1),
+    fechaFinal: new Date(2026, 11, 31),
+    observaciones: "Protección de patrimonio histórico"
+  },
+  {
+    id: 3,
+    circuito: "Circuito Espartaco",
+    mw: 22.1,
+    tipo: "Temporal",
+    fechaInicial: new Date(2026, 0, 3),
+    fechaFinal: new Date(2026, 0, 15),
+    observaciones: "Reparación de red de distribución"
+  }
+];
+
+// Mock de estadísticas de reportes
+export const estadisticasReportesMock = {
+  totalReportes: 5,
+  totalRotacionesEste: new Date().getFullYear(),
+  mwTotalApagado: 280.1,
+  circuitosTotales: 11,
+  circuitosApagables: 10,
+  circuitosNoApagables: 1,
+  promedioMWPorRotacion: 56.0,
+  bloquesMasRotados: [
+    { bloque: 1, cantidad: 2 },
+    { bloque: 2, cantidad: 2 },
+    { bloque: 3, cantidad: 1 }
+  ],
+  lastRotation: new Date(2026, 0, 4, 14, 30),
+  nextScheduledRotation: new Date(2026, 0, 5, 14, 30)
+};
