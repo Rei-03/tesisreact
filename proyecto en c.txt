@@ -1,0 +1,123 @@
+## 🔗 CONEXIONES IDENTIFICADAS:
+**Base de datos principal (SIGERE):**  
+Cadena: `Data Source=localhost;Initial Catalog=SIGERE;Integrated Security=True;`  
+Contexto/Clase: `SIGEREDataSet` (DataSet generado)  
+Ubicación: `Informacion_Deficit/SIGEREDataSet.Designer.cs`  
+Proveedor: `System.Data.SqlClient` (SQL Server)  
+
+**Base de datos secundaria (PSFV):**  
+Cadena: `Data Source=localhost;Initial Catalog=PSFV;Integrated Security=True;`  
+Contexto/Clase: `PSFVDataSet` (DataSet generado)  
+Ubicación: `Informacion_Deficit/PSFVDataSet.Designer.cs`  
+Proveedor: `System.Data.SqlClient` (SQL Server)  
+
+## 🗂️ TABLAS RELEVANTES PARA CIRCUITOS:
+**Tabla principal (SIGERE.ap_circuitos):**  
+Clase C#: `ap_circuitosDataTable` / `ap_circuitosRow`  
+Columnas clave:  
+- `idCircuitoP` → `IdCircuitoP` (int, PK)  
+- `idProv` → `IdProv` (string)  
+- `Circuito33` → `Circuito33` (string, nullable)  
+- `Bloque` → `Bloque` (int, nullable)  
+- `CircuitoP` → `CircuitoP` (string, nullable)  
+- `Clientes` → `Clientes` (int, nullable)  
+- `ZonaAfectada` → `ZonaAfectada` (string, nullable)  
+- `Apagable` → `Apagable` (bool)  
+
+Relaciones:  
+- FK con `PSFV.ap_Aseguramientos` via `idCircuitoP`  
+- FK con `PSFV.ap_ProxAperturas` via `id_Circuito` (idCircuitoP)  
+
+**Tabla aseguramientos (PSFV.ap_Aseguramientos):**  
+Clase C#: `ap_AseguramientosDataTable` / `ap_AseguramientosRow`  
+Columnas clave:  
+- `id_CircuitoP` → `IdCircuitoP` (int)  
+- `CircuitoP` → `CircuitoP` (string)  
+- `fechaInicial` → `FechaInicial` (DateTime)  
+- `fechaFinal` → `FechaFinal` (DateTime)  
+- `Observaciones` → `Observaciones` (string)  
+- `mw` → `Mw` (decimal, nullable)  
+- `tipo` → `Tipo` (string)  
+
+**Tabla próximas aperturas (PSFV.ap_ProxAperturas):**  
+Clase C#: `ap_ProxAperturasDataTable` / `ap_ProxAperturasRow`  
+Columnas clave:  
+- `id_Circuito` → `IdCircuito` (int)  
+- `Circiuto` → `Circiuto` (string)  
+- `MW Hora Actual` → `MWHoraActual` (decimal)  
+- `Bloque` → `Bloque` (int)  
+
+## 📝 CONSULTAS ENCONTRADAS:
+**Consulta de circuitos apagables:**  
+```sql
+SELECT idCircuitoP, idProv, Circuito33, Bloque, CircuitoP, Clientes, ZonaAfectada, Apagable
+FROM ap_circuitos
+WHERE Apagable = 1
+ORDER BY CircuitoP
+```  
+Propósito: Mostrar circuitos disponibles para selección en formularios (ej: Aseguramientos)  
+Tablas: `ap_circuitos`  
+Filtros: `Apagable = 1`  
+
+**Consulta de aseguramientos por fecha:**  
+```sql
+SELECT id_CircuitoP, CircuitoP, fechaInicial, fechaFinal, Observaciones, mw, tipo
+FROM ap_Aseguramientos
+WHERE fechaInicial <= @fecha AND fechaFinal >= @fecha
+ORDER BY fechaFinal DESC
+```  
+Propósito: Mostrar aseguramientos activos en pantalla principal  
+Tablas: `ap_Aseguramientos`  
+Filtros: `fechaInicial <= @fecha AND fechaFinal >= @fecha`  
+
+**Consulta de próximas aperturas:**  
+```sql
+SELECT id_Circuito, Circiuto, [MW Hora Actual], Bloque FROM ap_ProxAperturas
+```  
+Propósito: Mostrar próximas aperturas en pantalla principal  
+Tablas: `ap_ProxAperturas`  
+Filtros: Ninguno  
+
+**Procedimiento almacenado ap_lisApagonCFG:**  
+Propósito: Listar afectaciones por circuito y fecha  
+Parámetros: `@idProv varchar(3)`, `@Fecha smalldatetime`  
+Retorna: `idCircuitoP`, `Bloque`, `Circuito33`, `CircuitoP`, `Clientes`, `MWAfectados`, `FechaRetiro`, `FechaCierre`, `Tiempo`, `ZonaAfectada`, `Observaciones`  
+
+**Procedimiento almacenado ap_mwxHora:**  
+Propósito: Obtener MW por circuito y fecha  
+Parámetros: `@idCircuitoP int`, `@Fecha datetime`  
+Retorna: `mw decimal`  
+
+## 🌐 ENDPOINTS/ACCESOS:
+**Acceso a datos de circuito:**  
+Método: `ap_circuitosTableAdapter.Fill()` en `Aseguramientos.cs` y `Form1.cs`  
+HTTP: N/A (WinForms, no APIs)  
+Lógica: Carga DataSet desde DB, filtra `Apagable = 1`, ordena por `CircuitoP`  
+
+**Acceso a afectaciones de circuito:**  
+Método: `ap_lisApagonCFGTableAdapter.Fill()` en `Form1.cs`  
+HTTP: N/A  
+Lógica: Ejecuta SP `ap_lisApagonCFG` con `idProv="CFG"` y fecha actual  
+
+**Acceso a aseguramientos:**  
+Método: `ap_AseguramientosTableAdapter.Fill()` en `Form1.cs` y `Aseguramientos.cs`  
+HTTP: N/A  
+Lógica: Carga aseguramientos por fecha, calcula MW total afectado  
+
+**Acceso a próximas aperturas:**  
+Método: `ap_ProxAperturasTableAdapter.Fill()` en `Form1.cs`  
+HTTP: N/A  
+Lógica: Carga todas las aperturas, agrupa por bloque para calcular MW  
+
+## 🏗️ ARQUITECTURA DETECTADA:
+- **Tipo:** WinForms (Windows Forms)  
+- **Acceso a datos:** DataSets tipados + TableAdapters (generados por VS)  
+- **ORM/Patrón:** ADO.NET directo via DataSets (no Entity Framework)  
+- **Patrón de diseño:** No detectado (Repository/Unit of Work ausente)  
+- **APIs:** Ninguna (aplicación de escritorio, acceso directo a DB desde UI)  
+
+**Notas para migración:**  
+- Los circuitos se muestran en combos y grids directamente desde DB  
+- No hay separación de capas (UI accede directamente a DB)  
+- Para React/Next.js, crear APIs REST que repliquen las consultas de DataSets  
+- Priorizar endpoints para: listar circuitos, afectaciones por fecha, aseguramientos activos
