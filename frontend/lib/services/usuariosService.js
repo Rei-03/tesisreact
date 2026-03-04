@@ -1,5 +1,7 @@
 // lib/services/usuariosService.js
 
+import axios from 'axios';
+
 /**
  * Servicio para gestionar usuarios (CRUD)
  * MODO DEMO: Usa datos simulados en localStorage cuando el backend no está disponible
@@ -85,19 +87,8 @@ export const obtenerUsuarios = async () => {
     // TODO: Conectar con el endpoint del backend cuando esté listo
     // endpoint: GET /api/usuarios
 
-    const response = await fetch("/api/usuarios", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-
-    const datos = await response.json();
-    return datos || [];
+    const response = await axios.get("/api/usuarios");
+    return response.data || [];
   } catch (error) {
     console.error("Error obteniendo usuarios:", error);
     // En caso de error, volver a los datos mock
@@ -149,21 +140,8 @@ export const crearUsuario = async (datos = {}) => {
     // endpoint: POST /api/usuarios
     // El backend debe encriptar la contraseña y validar datos
 
-    const response = await fetch("/api/usuarios", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(datos),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData?.message || `Error: ${response.status}`);
-    }
-
-    const resultado = await response.json();
-    return resultado;
+    const response = await axios.post("/api/usuarios", datos);
+    return response.data;
   } catch (error) {
     console.error("Error creando usuario:", error);
     throw error;
@@ -180,19 +158,8 @@ export const obtenerUsuarioPorId = async (usuarioId) => {
     // TODO: Conectar con el endpoint del backend cuando esté listo
     // endpoint: GET /api/usuarios/{id}
     
-    const response = await fetch(`/api/usuarios/${usuarioId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-
-    const datos = await response.json();
-    return datos;
+    const response = await axios.get(`/api/usuarios/${usuarioId}`);
+    return response.data;
   } catch (error) {
     console.error("Error obteniendo usuario:", error);
     throw error;
@@ -210,20 +177,8 @@ export const actualizarUsuario = async (usuarioId, datos = {}) => {
     // TODO: Conectar con el endpoint del backend cuando esté listo
     // endpoint: PUT /api/usuarios/{id}
     
-    const response = await fetch(`/api/usuarios/${usuarioId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(datos),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-
-    const resultado = await response.json();
-    return resultado;
+    const response = await axios.put(`/api/usuarios/${usuarioId}`, datos);
+    return response.data;
   } catch (error) {
     console.error("Error actualizando usuario:", error);
     throw error;
@@ -261,20 +216,8 @@ export const eliminarUsuario = async (usuarioId) => {
     // endpoint: DELETE /api/usuarios/{id}
     // El backend debe validar que no se pueda eliminar el último admin
 
-    const response = await fetch(`/api/usuarios/${usuarioId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData?.message || `Error: ${response.status}`);
-    }
-
-    const resultado = await response.json();
-    return resultado;
+    const response = await axios.delete(`/api/usuarios/${usuarioId}`);
+    return response.data;
   } catch (error) {
     console.error("Error eliminando usuario:", error);
     throw error;
@@ -297,19 +240,8 @@ export const validarLoginUnico = async (login) => {
     // TODO: Conectar con el endpoint del backend cuando esté listo
     // endpoint: GET /api/usuarios/validar-login?login={login}
 
-    const response = await fetch(`/api/usuarios/validar-login?login=${encodeURIComponent(login)}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-
-    const resultado = await response.json();
-    return resultado.disponible || true;
+    const response = await axios.get(`/api/usuarios/validar-login?login=${encodeURIComponent(login)}`);
+    return response.data.disponible || true;
   } catch (error) {
     console.error("Error validando login:", error);
     return false;
@@ -347,21 +279,8 @@ export const autenticarUsuario = async (login, password) => {
     // endpoint: POST /api/auth/login
     // El backend debe encriptar contraseñas y usar JWT/sesiones
 
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ login, password }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData?.message || `Error: ${response.status}`);
-    }
-
-    const resultado = await response.json();
-    return resultado.usuario;
+    const response = await axios.post("/api/auth/login", { login, password });
+    return response.data.usuario;
   } catch (error) {
     console.error("Error autenticando usuario:", error);
     throw error;

@@ -1,4 +1,5 @@
 // lib/services/rotacionService.js
+import axios from 'axios';
 import { apiClient } from "@/lib/api/apiClient";
 
 /**
@@ -23,20 +24,8 @@ export const generarRotacion = async (datos = {}) => {
     console.log("Generando rotación con datos:", datos);
     
     // Por ahora, solo mostramos un mensaje
-    const response = await fetch("/api/rotaciones/generar", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(datos),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-
-    const resultado = await response.json();
-    return resultado;
+    const response = await axios.post("/api/rotaciones/generar", datos);
+    return response.data;
   } catch (error) {
     console.error("Error generando rotación:", error);
     throw error;
@@ -52,19 +41,8 @@ export const obtenerRotaciones = async () => {
     // TODO: Conectar con el endpoint del backend cuando esté listo
     // endpoint: GET /api/rotaciones
     
-    const response = await fetch("/api/rotaciones", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-
-    const datos = await response.json();
-    return datos;
+    const response = await axios.get("/api/rotaciones");
+    return response.data;
   } catch (error) {
     console.error("Error obteniendo rotaciones:", error);
     throw error;

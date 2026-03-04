@@ -5,9 +5,10 @@
  * Con fallback a datos mock cuando la API no esté disponible
  */
 
+import axios from 'axios';
 import { circuitosMock, aseguramientosMock, proxAperturasMock } from "@/data/mock";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 let apiAvailable = null; // Caché de disponibilidad de API
 
 // Verificar si la API está disponible
@@ -15,29 +16,15 @@ async function checkApiAvailability() {
   if (apiAvailable !== null) return apiAvailable;
   
   try {
-    const response = await fetch(`${API_BASE_URL}/health`, { 
-      method: "HEAD",
-      signal: AbortSignal.timeout(2000) 
+    await axios.head(`${API_BASE_URL}/health`, {
+      timeout: 2000
     });
-    apiAvailable = response.ok;
+    apiAvailable = true;
     return apiAvailable;
   } catch (error) {
     apiAvailable = false;
     return false;
   }
-}
-
-// Utilidad para manejar errores de respuesta
-async function handleResponse(response) {
-  if (!response.ok) {
-    try {
-      const error = await response.json();
-      throw new Error(error.message || `Error ${response.status}: ${response.statusText}`);
-    } catch (e) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-  }
-  return response.json();
 }
 
 // Ejecutar con fallback a mock
@@ -49,8 +36,8 @@ async function fetchWithFallback(url, options = {}) {
       return null;
     }
 
-    const response = await fetch(url, { signal: AbortSignal.timeout(5000), ...options });
-    return await handleResponse(response);
+    const response = await axios.get(url, { timeout: 5000, ...options });
+    return response.data;
   } catch (error) {
     console.warn(`Fetch failed for ${url}:`, error.message);
     apiAvailable = false;
@@ -77,12 +64,8 @@ const circuitos = {
 
   update: async (id, updateData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/circuitos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
-      return await handleResponse(response);
+      const response = await axios.put(`${API_BASE_URL}/circuitos/${id}`, updateData);
+      return response.data;
     } catch (error) {
       console.error(`Error updating circuit ${id}:`, error);
       throw error;
@@ -91,10 +74,8 @@ const circuitos = {
 
   delete: async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/circuitos/${id}`, {
-        method: "DELETE",
-      });
-      return await handleResponse(response);
+      const response = await axios.delete(`${API_BASE_URL}/circuitos/${id}`);
+      return response.data;
     } catch (error) {
       console.error(`Error deleting circuit ${id}:`, error);
       throw error;
@@ -127,12 +108,8 @@ const aseguramientos = {
 
   create: async (createData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/aseguramientos`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(createData),
-      });
-      return await handleResponse(response);
+      const response = await axios.post(`${API_BASE_URL}/aseguramientos`, createData);
+      return response.data;
     } catch (error) {
       console.error("Error creating aseguramiento:", error);
       throw error;
@@ -141,12 +118,8 @@ const aseguramientos = {
 
   update: async (id, updateData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/aseguramientos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
-      return await handleResponse(response);
+      const response = await axios.put(`${API_BASE_URL}/aseguramientos/${id}`, updateData);
+      return response.data;
     } catch (error) {
       console.error(`Error updating aseguramiento ${id}:`, error);
       throw error;
@@ -155,10 +128,8 @@ const aseguramientos = {
 
   delete: async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/aseguramientos/${id}`, {
-        method: "DELETE",
-      });
-      return await handleResponse(response);
+      const response = await axios.delete(`${API_BASE_URL}/aseguramientos/${id}`);
+      return response.data;
     } catch (error) {
       console.error(`Error deleting aseguramiento ${id}:`, error);
       throw error;
@@ -180,12 +151,8 @@ const proximasAperturas = {
 
   create: async (createData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/proximasAperturas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(createData),
-      });
-      return await handleResponse(response);
+      const response = await axios.post(`${API_BASE_URL}/proximasAperturas`, createData);
+      return response.data;
     } catch (error) {
       console.error("Error creating próxima apertura:", error);
       throw error;
@@ -194,12 +161,8 @@ const proximasAperturas = {
 
   update: async (id, updateData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/proximasAperturas/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
-      return await handleResponse(response);
+      const response = await axios.put(`${API_BASE_URL}/proximasAperturas/${id}`, updateData);
+      return response.data;
     } catch (error) {
       console.error(`Error updating próxima apertura ${id}:`, error);
       throw error;
@@ -208,10 +171,8 @@ const proximasAperturas = {
 
   delete: async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/proximasAperturas/${id}`, {
-        method: "DELETE",
-      });
-      return await handleResponse(response);
+      const response = await axios.delete(`${API_BASE_URL}/proximasAperturas/${id}`);
+      return response.data;
     } catch (error) {
       console.error(`Error deleting próxima apertura ${id}:`, error);
       throw error;

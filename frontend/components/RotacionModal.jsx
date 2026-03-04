@@ -8,6 +8,8 @@ import {
   FileSpreadsheet,
   Check,
   ChevronRight,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -24,6 +26,7 @@ export default function RotacionModal({
   const [mwTotal, setMwTotal] = useState(0);
   const [error, setError] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
+  const [circuitoSelectoParaAgregar, setCircuitoSelectoParaAgregar] = useState("");
 
   // Resetear modal cuando se cierra
   useEffect(() => {
@@ -34,8 +37,67 @@ export default function RotacionModal({
       setMwTotal(0);
       setError(null);
       setConfirmando(false);
+      setCircuitoSelectoParaAgregar("");
     }
   }, [isOpen]);
+
+  /**
+   * Elimina un circuito de la selección
+   */
+  const eliminarCircuito = (idx) => {
+    const circuito = circuitosSeleccionados[idx];
+    const mwCircuito = circuito.mw || circuito.MW || 0;
+    
+    const nuevosCircuitos = circuitosSeleccionados.filter((_, i) => i !== idx);
+    const nuevoMwTotal = mwTotal - mwCircuito;
+    
+    setCircuitosSeleccionados(nuevosCircuitos);
+    setMwTotal(nuevoMwTotal);
+  };
+
+  /**
+   * Obtiene los circuitos disponibles para agregar (no están en la selección)
+   */
+  const getCircuitosDisponiblesParaAgregar = () => {
+    const idsSeleccionados = new Set(
+      circuitosSeleccionados.map(c => c.idCircuitoP || c.id)
+    );
+    return circuitosDisponibles.filter(c => !idsSeleccionados.has(c.idCircuitoP || c.id));
+  };
+
+  /**
+   * Agrega un circuito a la selección
+   */
+  const agregarCircuito = () => {
+    if (!circuitoSelectoParaAgregar) {
+      setError("Selecciona un circuito para agregar");
+      return;
+    }
+
+    const circuitoAgregar = circuitosDisponibles.find(
+      c => (c.idCircuitoP || c.id) === parseInt(circuitoSelectoParaAgregar)
+    );
+
+    if (!circuitoAgregar) {
+      setError("Circuito no encontrado");
+      return;
+    }
+
+    const mwCircuito = circuitoAgregar.mw || circuitoAgregar.MW || 0;
+    const mwTarget = parseFloat(mwRequerido);
+    const nuevoMwTotal = mwTotal + mwCircuito;
+
+    // Validar límite de MW (permitir un 20% de exceso como en la selección original)
+    if (nuevoMwTotal > mwTarget * 1.2) {
+      setError(`Agregar este circuito (${mwCircuito.toFixed(2)} MW) excedería el límite. MW disponible: ${(mwTarget * 1.2 - mwTotal).toFixed(2)} MW`);
+      return;
+    }
+
+    setCircuitosSeleccionados([...circuitosSeleccionados, circuitoAgregar]);
+    setMwTotal(nuevoMwTotal);
+    setCircuitoSelectoParaAgregar("");
+    setError(null);
+  };
 
   /**
    * Selecciona circuitos automáticamente para alcanzar los MW requeridos
@@ -260,10 +322,26 @@ export default function RotacionModal({
                 </div>
               </div>
 
-              {/* TABLA DE CIRCUITOS */}
+              {/* INFO DE MW DISPONIBLE PARA AGREGAR */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-xs text-amber-700 font-bold">⚡ ESPACIO DISPONIBLE</p>
+                <p className="text-sm text-amber-800 mt-1">
+                  Puedes agregar hasta{" "}
+                  <span className="font-bold">
+                    {(parseFloat(mwRequerido) * 1.2 - mwTotal).toFixed(2)} MW
+                  </span>
+                  {" "}más (límite total:{" "}
+                  <span className="font-bold">
+                    {(parseFloat(mwRequerido) * 1.2).toFixed(2)} MW
+                  </span>
+                  )
+                </p>
+              </div>
+
+              {/* TABLA DE CIRCUITOS SELECCIONADOS */}
               <div className="border rounded-lg overflow-hidden">
                 <div className="bg-slate-800 text-white px-4 py-3 font-bold">
-                  Circuitos Seleccionados
+                  Circuitos Seleccionados ({circuitosSeleccionados.length})
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -280,6 +358,9 @@ export default function RotacionModal({
                         </th>
                         <th className="px-4 py-2 text-right font-semibold text-slate-700">
                           Clientes
+                        </th>
+                        <th className="px-4 py-2 text-center font-semibold text-slate-700">
+                          Acción
                         </th>
                       </tr>
                     </thead>
@@ -300,11 +381,58 @@ export default function RotacionModal({
                           <td className="px-4 py-2 text-right">
                             {(circuito.Clientes || circuito.clientes || 0).toLocaleString()}
                           </td>
+                          <td className="px-4 py-2 text-center">
+                            <button
+                              onClick={() => eliminarCircuito(idx)}
+                              className="p-1.5 hover:bg-red-100 rounded text-red-600 hover:text-red-700 transition-colors"
+                              title="Eliminar circuito"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* AGREGAR CIRCUITO */}
+              <div className="border rounded-lg p-4 bg-slate-50">
+                <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                  <Plus size={18} className="text-blue-600" />
+                  Agregar Circuito
+                </h3>
+                <div className="flex gap-2">
+                  <select
+                    value={circuitoSelectoParaAgregar}
+                    onChange={(e) => {
+                      setCircuitoSelectoParaAgregar(e.target.value);
+                      setError(null);
+                    }}
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  >
+                    <option value="">— Selecciona un circuito —</option>
+                    {getCircuitosDisponiblesParaAgregar().map((circuito) => (
+                      <option key={circuito.idCircuitoP || circuito.id} value={circuito.idCircuitoP || circuito.id}>
+                        {circuito.CircuitoP || circuito.nombre || "N/A"} ({(circuito.mw || circuito.MW || 0).toFixed(2)} MW)
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={agregarCircuito}
+                    disabled={!circuitoSelectoParaAgregar}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg font-bold transition-colors flex items-center gap-2 text-sm"
+                  >
+                    <Plus size={16} />
+                    Agregar
+                  </button>
+                </div>
+                {getCircuitosDisponiblesParaAgregar().length === 0 && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    No hay circuitos disponibles para agregar
+                  </p>
+                )}
               </div>
 
               {error && (
@@ -379,3 +507,4 @@ export default function RotacionModal({
     </div>
   );
 }
+
