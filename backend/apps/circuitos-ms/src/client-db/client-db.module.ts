@@ -29,3 +29,7 @@ const dbConfig = {
   exports: ['DATABASE_CONNECTION'],
 })
 export class ClientDbModule {}
+
+
+
+export type DbConnection = sql.ConnectionPool 
