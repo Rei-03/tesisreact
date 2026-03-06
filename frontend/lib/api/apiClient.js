@@ -30,18 +30,10 @@ async function checkApiAvailability() {
 // Ejecutar con fallback a mock
 async function fetchWithFallback(url, options = {}) {
   try {
-    const isAvailable = await checkApiAvailability();
-    if (!isAvailable) {
-      console.warn("API no disponible, usando datos mock");
-      return null;
-    }
-
     const response = await axios.get(url, { timeout: 5000, ...options });
     return response.data;
   } catch (error) {
-    console.warn(`Fetch failed for ${url}:`, error.message);
-    apiAvailable = false;
-    return null;
+    throw new Error()
   }
 }
 
@@ -49,7 +41,7 @@ async function fetchWithFallback(url, options = {}) {
 const circuitos = {
   getAll: async () => {
     const data = await fetchWithFallback(`${API_BASE_URL}/circuitos`);
-    return data || circuitosMock;
+    return data;
   },
 
   getApagables: async () => {
