@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const AuthContext = createContext(null);
 
@@ -52,9 +52,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("userData");
   };
 
-  const isAdmin = () => {
+  // Memoizar isAdmin para evitar que se cree una nueva función en cada render
+  const isAdmin = useCallback(() => {
     return user?.rol === "admin" || user?.role === "admin";
-  };
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, user, isAdmin }}>

@@ -1,6 +1,6 @@
 "use client";
 import { Shield, Trash2, UserPlus, AlertCircle, Loader, Lock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import {
@@ -28,21 +28,8 @@ export default function UsuariosPage() {
   const [loginUnico, setLoginUnico] = useState(true);
   const [eliminando, setEliminando] = useState(null);
 
-  // Protección: verificar autenticación y permisos de admin
-  useEffect(() => {
-    if (!isLoading && (!isAuthenticated || !isAdmin())) {
-      router.push("/loguin");
-    }
-  }, [isAuthenticated, isLoading, router, isAdmin]);
-
-  // Cargar usuarios al montar el componente
-  useEffect(() => {
-    if (isAuthenticated && isAdmin()) {
-      cargarUsuarios();
-    }
-  }, [isAuthenticated, isAdmin()]);
-
-  const cargarUsuarios = async () => {
+  // Memoizar cargarUsuarios para evitar recreaciones innecesarias
+  const cargarUsuarios = useCallback(async () => {
     try {
       setCargandoUsuarios(true);
       setError(null);
@@ -53,7 +40,23 @@ export default function UsuariosPage() {
     } finally {
       setCargandoUsuarios(false);
     }
-  };
+  }, []);
+
+  // Ejecutar una sola vez al cargar la página para validar permisos
+  useEffect(() => {
+    if (isLoading) return; // Esperar a que cargue autenticación
+    
+    if (!isAuthenticated || !isAdmin()) {
+      router.push("/loguin");
+    }
+  }, []); // Solo ejecutar una vez
+
+  // Cargar usuarios cuando está autenticado
+  useEffect(() => {
+    if (isAuthenticated && isAdmin()) {
+      cargarUsuarios();
+    }
+  }, [isAuthenticated, cargarUsuarios, isAdmin]);
 
   const validarLogin = async (login) => {
     if (!login) {
