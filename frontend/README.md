@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Proyecto SIGERE - Frontend
 
-## Getting Started
+Aplicación frontend desarrollada con [Next.js](https://nextjs.org) para el sistema de gestión de rotaciones y seguimiento de incidentes.
 
-First, run the development server:
+## 📋 Descripción
+
+Sistema integral de gestión con módulos para:
+- **Dashboard**: Panel principal con resumen de información
+- **Aseguramientos**: Gestión de aseguramientos
+- **Circuitos**: Administración de circuitos
+- **Rotaciones**: Control de rotaciones de personal
+- **Reportes**: Generación y visualización de reportes
+- **Usuarios**: Gestión de usuarios del sistema
+- **Configuración**: Ajustes y configuración del sistema
+- **Autenticación**: Sistema seguro de login
+
+## 🚀 Quick Start
+
+### Requisitos Previos
+- Node.js 16 o superior
+- npm, yarn, pnpm o bun
+
+### Instalación
+
+```bash
+npm install
+```
+
+### Desarrollo
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la aplicación.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Build Producción
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## 📁 Estructura del Proyecto
 
-To learn more about Next.js, take a look at the following resources:
+```
+frontend/
+├── app/                          # Rutas y layouts de Next.js
+│   ├── layout.js                # Layout principal
+│   ├── page.js                  # Página de inicio
+│   ├── dashboard/               # Módulo Dashboard
+│   ├── usuarios/                # Módulo Usuarios
+│   ├── circuitos/               # Módulo Circuitos
+│   ├── aseguramientos/          # Módulo Aseguramientos
+│   ├── reportes/                # Módulo Reportes
+│   ├── configuracion/           # Módulo Configuración
+│   └── loguin/                  # Página de Login
+├── components/                  # Componentes reutilizables
+│   ├── Sidebar.jsx             # Barra lateral de navegación
+│   └── RotacionModal.jsx        # Modal para rotaciones
+├── contexts/                    # React Contexts
+│   └── AuthContext.jsx          # Contexto de autenticación
+├── lib/                         # Utilidades y servicios
+│   ├── api/                     # Cliente API
+│   ├── services/                # Servicios de negocio
+│   └── utils/                   # Funciones utilitarias
+├── public/                      # Archivos estáticos
+│   └── data/                    # Datos estáticos (municipios, etc)
+└── styles/                      # Estilos globales
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔧 Servicios Disponibles
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **apiClient**: Cliente para comunicación con el backend
+- **rotacionService**: Gestión de rotaciones
+- **usuariosService**: Operaciones con usuarios
+- **reportesService**: Generación de reportes
+- **preferencesService**: Preferencias del usuario
 
-## Deploy on Vercel
+## 🛠️ Tecnologías
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [Next.js](https://nextjs.org) - Framework React
+- [React](https://react.dev) - Librería UI
+- JavaScript/TypeScript
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📝 Scripts Disponibles
+
+- `npm run dev` - Inicia servidor de desarrollo
+- `npm run build` - Crea build de producción
+- `npm start` - Inicia servidor de producción
+- `npm run lint` - Ejecuta linter
+
+## 🔐 Autenticación
+
+La aplicación utiliza un contexto de autenticación (`AuthContext`) para gestionar sesiones de usuario y control de acceso.
+
+---
+
+**Proyecto académico de Tesis en React**
