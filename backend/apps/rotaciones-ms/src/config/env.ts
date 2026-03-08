@@ -1,0 +1,20 @@
+import z from "zod";
+import "dotenv/config";
+
+export const envSchema = z.object({
+  PORT: z.coerce.number().min(1).max(65535).default(3001),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NATS_URLS: z.string()
+    .default("nats://localhost:4222")
+    .transform((val) => val.split(",")),
+});
+
+const parsedEnv = envSchema.safeParse(process.env);
+
+if (!parsedEnv.success) {
+  throw new Error(
+    `Invalid environment variables: ${parsedEnv.error.issues.map((issue) => issue.message).join(", ")}`,
+  );
+}
+
+export const env = parsedEnv.data;

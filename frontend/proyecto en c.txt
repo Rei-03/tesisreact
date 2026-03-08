@@ -45,7 +45,7 @@ Columnas clave:
 - `id_Circuito` → `IdCircuito` (int)  
 - `Circiuto` → `Circiuto` (string)  
 - `MW Hora Actual` → `MWHoraActual` (decimal)  
-- `Bloque` → `Bloque` (int)  
+- `Bloque` → `Bloque` (int)  s
 
 ## 📝 CONSULTAS ENCONTRADAS:
 **Consulta de circuitos apagables:**  

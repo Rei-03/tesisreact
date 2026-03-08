@@ -24,7 +24,7 @@ export const generarRotacion = async (datos = {}) => {
     console.log("Generando rotación con datos:", datos);
     
     // Por ahora, solo mostramos un mensaje
-    const response = await axios.post("/api/rotaciones/generar", datos);
+    const response = await axios.post("/rotaciones", datos);
     return response.data;
   } catch (error) {
     console.error("Error generando rotación:", error);
@@ -41,7 +41,7 @@ export const obtenerRotaciones = async () => {
     // TODO: Conectar con el endpoint del backend cuando esté listo
     // endpoint: GET /api/rotaciones
     
-    const response = await axios.get("/api/rotaciones");
+    const response = await axios.get("/rotaciones/historial");
     return response.data;
   } catch (error) {
     console.error("Error obteniendo rotaciones:", error);

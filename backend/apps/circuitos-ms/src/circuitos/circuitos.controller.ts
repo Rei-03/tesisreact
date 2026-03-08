@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CircuitosService } from './circuitos.service';
 import { CreateCircuitoDto } from './dto/create-circuito.dto';
 import { UpdateCircuitoDto } from './dto/update-circuito.dto';
@@ -7,28 +8,18 @@ import { UpdateCircuitoDto } from './dto/update-circuito.dto';
 export class CircuitosController {
   constructor(private readonly circuitosService: CircuitosService) {}
 
-  @Post()
-  create(@Body() createCircuitoDto: CreateCircuitoDto) {
-    return this.circuitosService.create(createCircuitoDto);
-  }
-
-  @Get()
+  @MessagePattern('circuitos.findAll')
   findAll() {
     return this.circuitosService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.circuitosService.findOne(+id);
+  @MessagePattern('circuitos.findAllWithConsumption')
+  findAllWithConsumption() {
+    return this.circuitosService.findAllWithConsumption();
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCircuitoDto: UpdateCircuitoDto) {
-    return this.circuitosService.update(+id, updateCircuitoDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.circuitosService.remove(+id);
+  @MessagePattern('circuitos.findOne')
+  findOne(@Payload() data: { id: number }) {
+    return this.circuitosService.findOne(data.id);
   }
 }

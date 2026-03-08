@@ -14,6 +14,10 @@ export class CircuitosService {
     return this.circuitoRepo.find(5,0);
   }
 
+  findAllWithConsumption() {
+    return this.circuitoRepo.findWithConsumption(5,0);
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} circuito`;
   }
