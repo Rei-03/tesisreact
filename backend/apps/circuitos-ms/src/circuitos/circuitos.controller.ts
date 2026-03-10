@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CircuitosService } from './circuitos.service';
 import { CreateCircuitoDto } from './dto/create-circuito.dto';
 import { UpdateCircuitoDto } from './dto/update-circuito.dto';
+import { FindConsumptionByDateDto } from './dto/find-consumption-by-date.dto';
 
 @Controller('circuitos')
 export class CircuitosController {
@@ -14,8 +15,8 @@ export class CircuitosController {
   }
 
   @MessagePattern('circuitos.findAllWithConsumption')
-  findAllWithConsumption() {
-    return this.circuitosService.findAllWithConsumption();
+  findAllWithConsumption(@Payload() payload: FindConsumptionByDateDto) {
+    return this.circuitosService.findAllWithConsumption(payload);
   }
 
   @MessagePattern('circuitos.findOne')

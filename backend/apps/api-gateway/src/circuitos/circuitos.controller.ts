@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, Query } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { FindConsumptionByDateDto } from './dto/find-consumption-by-date.dto';
 
 @Controller('circuitos')
 export class CircuitosController {
@@ -11,9 +12,9 @@ export class CircuitosController {
     return firstValueFrom(this.client.send('circuitos.findAll', {}));
   }
 
-  @Get('with-consumption')
-  findAllWithConsumption() {
-    return firstValueFrom(this.client.send('circuitos.findAllWithConsumption', {}));
+  @Post('with-consumption')
+  findAllWithConsumption(@Body() payload: FindConsumptionByDateDto) {
+    return firstValueFrom(this.client.send('circuitos.findAllWithConsumption', payload));
   }
 
   @Get(':id')

@@ -8,14 +8,9 @@ import { UpdateRotacioneDto } from './dto/update-rotacione.dto';
 export class RotacionesController {
   constructor(private readonly rotacionesService: RotacionesService) {}
 
-  @MessagePattern('rotaciones.create')
+  @MessagePattern('rotaciones.generate')
   create(@Payload() createRotacioneDto: CreateRotacioneDto) {
-    return this.rotacionesService.create(createRotacioneDto);
-  }
-
-  @MessagePattern('rotaciones.findAll')
-  findAll() {
-    return this.rotacionesService.findAll();
+    return this.rotacionesService.generate(createRotacioneDto);
   }
 
   @MessagePattern('rotaciones.findOne')

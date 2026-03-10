@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCircuitoDto } from './dto/create-circuito.dto';
 import { UpdateCircuitoDto } from './dto/update-circuito.dto';
+import { FindConsumptionByDateDto } from './dto/find-consumption-by-date.dto';
 import { CircuitosRepository } from './circuitos.repository';
 
 @Injectable()
@@ -14,8 +15,10 @@ export class CircuitosService {
     return this.circuitoRepo.find(5,0);
   }
 
-  findAllWithConsumption() {
-    return this.circuitoRepo.findWithConsumption(5,0);
+  findAllWithConsumption(payload: FindConsumptionByDateDto) {
+    const take = payload.take || 20;
+    const skip = payload.skip || 0;
+    return this.circuitoRepo.findWithConsumptionByDate(payload.fecha, take, skip);
   }
 
   findOne(id: number) {

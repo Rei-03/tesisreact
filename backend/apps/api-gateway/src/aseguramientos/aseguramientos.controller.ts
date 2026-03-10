@@ -4,7 +4,7 @@ import { UpdateAseguramientoDto } from './dto/update-aseguramiento.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 
-@Controller('aseguramientos')
+@Controller('/rotaciones/aseguramientos')
 export class AseguramientosController {
   constructor(@Inject('NatsService') private readonly client: ClientProxy) {}
 
