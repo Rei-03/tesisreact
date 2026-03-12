@@ -1,0 +1,47 @@
+{
+  "name": "@une/ms-common",
+  "version": "0.0.1",
+  "description": "Common utilities and configurations for all microservices",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "./dist/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "require": "./src/index.js"
+    },
+    "./filters": {
+      "types": "./src/filters/index.d.ts",
+      "import": "./src/filters/index.js",
+      "require": "./src/filters/index.js"
+    },
+    "./exceptions": {
+      "types": "./src/exceptions/index.d.ts",
+      "import": "./src/exceptions/index.js",
+      "require": "./src/exceptions/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint \"src/**/*.ts\"",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/microservices": "^11.1.14",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "rxjs": "^7.8.1",
+    "typescript": "^5.3.3"
+  }
+}

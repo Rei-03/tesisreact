@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -9,11 +9,14 @@ import { VerifyTokenDto } from './dto/verify-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { env } from '../config/env';
+import type { RedisClient } from '../redis/redis.module';
 
 interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
+  iat?: number;
+  exp?: number;
 }
 
 interface AuthTokens {
@@ -24,12 +27,10 @@ interface AuthTokens {
 
 @Injectable()
 export class AuthService {
-  // In-memory token blacklist for logout (en producción usar Redis)
-  private tokenBlacklist: Set<string> = new Set();
-
   constructor(
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    @Inject('REDIS_CLIENT') private readonly redisClient: RedisClient,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -148,7 +149,7 @@ export class AuthService {
 
     // Agregar token a blacklist si se proporciona
     if (token) {
-      this.addToBlacklist(token);
+      await this.addToBlacklist(token);
     }
 
     return {
@@ -165,7 +166,7 @@ export class AuthService {
     const { token } = verifyTokenDto;
 
     // Verificar si el token está en la lista negra
-    if (this.tokenBlacklist.has(token)) {
+    if (await this.isTokenBlacklisted(token)) {
       return {
         success: false,
         message: 'Token inválido o revocado',
@@ -233,7 +234,7 @@ export class AuthService {
     const { refreshToken } = refreshTokenDto;
 
     // Verificar si el token está en la lista negra
-    if (this.tokenBlacklist.has(refreshToken)) {
+    if (await this.isTokenBlacklisted(refreshToken)) {
       return {
         success: false,
         message: 'Token inválido o revocado',
@@ -280,7 +281,41 @@ export class AuthService {
     }
   }
 
-  addToBlacklist(token: string): void {
-    this.tokenBlacklist.add(token);
+  /**
+   * Agrega un token a la lista negra en Redis
+   * Usa el tiempo de expiración del JWT como TTL
+   */
+  private async addToBlacklist(token: string): Promise<void> {
+    try {
+      const payload = this.jwtService.decode<JwtPayload>(token);
+      if (!payload || !payload.exp) {
+        return;
+      }
+
+      // Calcular TTL: exp es un timestamp en segundos
+      const now = Math.floor(Date.now() / 1000);
+      const ttl = payload.exp - now;
+
+      if (ttl > 0) {
+        const blacklistKey = `blacklist:${token}`;
+        await this.redisClient.setEx(blacklistKey, ttl, '1');
+      }
+    } catch (error) {
+      console.error('Error adding token to blacklist:', error);
+    }
+  }
+
+  /**
+   * Verifica si un token está en la lista negra de Redis
+   */
+  private async isTokenBlacklisted(token: string): Promise<boolean> {
+    try {
+      const blacklistKey = `blacklist:${token}`;
+      const exists = await this.redisClient.exists(blacklistKey);
+      return exists === 1;
+    } catch (error) {
+      console.error('Error checking token blacklist:', error);
+      return false;
+    }
   }
 }

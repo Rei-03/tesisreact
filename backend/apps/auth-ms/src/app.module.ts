@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { NatsModule } from './nats/nats.module';
+import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { User } from './auth/entities/user.entity';
 import { env } from './config/env';
@@ -22,6 +23,7 @@ import { env } from './config/env';
       logging: env.DB_LOGGING === 'true',
     }),
     NatsModule,
+    RedisModule,
     AuthModule,
   ],
   controllers: [AppController],

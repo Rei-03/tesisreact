@@ -15,6 +15,9 @@ export const envSchema = z.object({
   DB_NAME: z.string().default("auth_db"),
   DB_SYNCHRONIZE: z.enum(["true", "false"]).default("true"),
   DB_LOGGING: z.enum(["true", "false"]).default("true"),
+  // Redis Configuration
+  REDIS_HOST: z.string().default("redis"),
+  REDIS_PORT: z.coerce.number().min(1).max(65535).default(6379),
   // JWT Configuration
   JWT_SECRET: z.string().default("your-secret-key-change-in-production"),
   JWT_EXPIRES_IN: z.string().default("24h"),
