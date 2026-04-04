@@ -4,7 +4,7 @@
  * El servicio obtiene:
  * - Circuitos con consumo desde circuitos-ms
  * - Apagones históricos desde circuitos-ms
- * - Aseguramientos desde aseguramientos-ms
+ * - Aseguramientos desde BD
  * - Crea cola NUEVA cada vez basándose en estado actual
  */
 export class CreateRotacioneDto {

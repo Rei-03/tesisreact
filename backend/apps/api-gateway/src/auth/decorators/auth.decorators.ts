@@ -1,37 +1,28 @@
-import { UseGuards, SetMetadata } from '@nestjs/common';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { RolesGuard } from './roles.guard';
-import { UserRole } from '../../auth/dto/user-role.enum';
+import { SetMetadata } from '@nestjs/common';
+import { UserRole } from '../dto/user-role.enum';
 
 /**
- * Decorador personalizado para proteger endpoints
- *
- * Usa el JwtAuthGuard para validar el token JWT
+ * Decorador para marcar rutas como públicas (sin autenticación)
  *
  * Ejemplo:
- * @RequireAuth()
- * @Post('protected')
- * async protectedEndpoint(@Req() req: Request) {
- *   // req.user contiene los datos validados del usuario
+ * @Public()
+ * @Post('login')
+ * async login(@Body() credentials: LoginDto) {
+ *   // No requiere JWT
  * }
  */
-export const RequireAuth = () => UseGuards(JwtAuthGuard);
+export const Public = () => SetMetadata('isPublic', true);
 
 /**
- * Decorador para proteger endpoints con validación de roles
+ * Decorador para especificar roles requeridos en una ruta
  *
- * Usa tanto JwtAuthGuard como RolesGuard para validar token y rol
+ * El guard (aplicado globalmente) verificará estos roles
  *
  * Ejemplo:
- * @Roles(UserRole.ADMIN)
+ * @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
  * @Post('admin-only')
  * async adminOnlyEndpoint(@Req() req: Request) {
- *   // Solo accessible para usuarios con rol ADMIN
+ *   // Solo accessible para usuarios con rol ADMIN o SUPERVISOR
  * }
  */
-export const Roles = (...roles: UserRole[]) => {
-  return (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) => {
-    SetMetadata('roles', roles)(target, propertyKey, descriptor);
-    UseGuards(JwtAuthGuard, RolesGuard)(target, propertyKey, descriptor);
-  };
-};
+export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);

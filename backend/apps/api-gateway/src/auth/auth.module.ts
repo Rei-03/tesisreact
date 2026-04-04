@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
-import { JwtAuthGuard, RolesGuard } from './guards';
+import { JwtAuthGuard, RolesGuard, AuthGuard } from './guards';
 import { RedisModule } from '../redis/redis.module';
 import { env } from '../config/env';
 
@@ -16,7 +17,15 @@ import { env } from '../config/env';
     RedisModule,
   ],
   controllers: [AuthController],
-  providers: [JwtAuthGuard, RolesGuard],
-  exports: [JwtAuthGuard, RolesGuard],
+  providers: [
+    JwtAuthGuard,
+    RolesGuard,
+    AuthGuard,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+  ],
+  exports: [JwtAuthGuard, RolesGuard, AuthGuard],
 })
 export class AuthModule {}

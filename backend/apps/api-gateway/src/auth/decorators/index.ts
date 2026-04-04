@@ -1,1 +1,1 @@
-export { RequireAuth, Roles } from './auth.decorators';
+export { Public, Roles } from './auth.decorators';

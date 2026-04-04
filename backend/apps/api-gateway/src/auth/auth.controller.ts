@@ -4,8 +4,7 @@ import {
   Body,
   Inject,
   Req,
-  UseGuards,
-  SetMetadata,
+  Get,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -17,7 +16,7 @@ import {
   VerifyTokenDto,
   RefreshTokenDto,
 } from './dto';
-import { JwtAuthGuard, RolesGuard } from './guards';
+import { Public } from './decorators';
 import { UserRole } from './dto/user-role.enum';
 
 @Controller('auth')
@@ -28,6 +27,7 @@ export class AuthController {
    * Register a new user
    * No authentication required
    */
+  @Public()
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     return firstValueFrom(
@@ -40,6 +40,7 @@ export class AuthController {
    * Returns access and refresh tokens
    * No authentication required
    */
+  @Public()
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return firstValueFrom(
@@ -52,6 +53,7 @@ export class AuthController {
    * Returns new access and refresh tokens
    * No authentication required (uses refresh token)
    */
+  @Public()
   @Post('refresh')
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
     return firstValueFrom(
@@ -61,9 +63,8 @@ export class AuthController {
 
   /**
    * Verify JWT token validity
-   * Protected: requires valid JWT
+   * Protected: requires valid JWT (AuthGuard global)
    */
-  @UseGuards(JwtAuthGuard)
   @Post('verify')
   async verifyToken(
     @Body() verifyTokenDto: VerifyTokenDto,
@@ -76,10 +77,9 @@ export class AuthController {
 
   /**
    * Logout user and revoke session
-   * Protected: requires valid JWT
+   * Protected: requires valid JWT (AuthGuard global)
    * Invalidates the token by adding it to blacklist
    */
-  @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(
     @Body() logoutDto: LogoutDto,
@@ -98,9 +98,8 @@ export class AuthController {
 
   /**
    * Get current user info from token
-   * Protected: requires valid JWT
+   * Protected: requires valid JWT (AuthGuard global)
    */
-  @UseGuards(JwtAuthGuard)
   @Post('me')
   async getMe(@Req() req: Request & { user: any }) {
     return {

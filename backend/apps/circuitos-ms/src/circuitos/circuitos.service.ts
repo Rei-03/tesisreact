@@ -21,6 +21,16 @@ export class CircuitosService {
     return this.circuitoRepo.findWithConsumptionByDate(payload.fecha, take, skip);
   }
 
+  /**
+   * Obtiene circuitos con consumo Y último apagón de cada circuito
+   * Optimizado para rotaciones-ms que necesita ambos datos
+   */
+  findWithConsumptionAndApagones(payload: FindConsumptionByDateDto) {
+    const take = payload.take || 20;
+    const skip = payload.skip || 0;
+    return this.circuitoRepo.findWithConsumptionAndLastApagon(payload.fecha, take, skip);
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} circuito`;
   }

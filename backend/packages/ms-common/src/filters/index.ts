@@ -1,4 +1,4 @@
-export { RpcExceptionFilter } from './rpc-exception.filter';
+export { CustomRpcExceptionFilter, CustomRpcExceptionFilter as RpcExceptionFilter } from './rpc-exception.filter';
 export {
   HttpErrorFilter,
   type IHttpErrorResponse,
