@@ -12,7 +12,7 @@ export class CreateRotacioneDto {
    * Déficit de potencia en MW que debe ser cubierto
    * Ejemplo: 50 (para cubrir 50 MW de falta)
    */
-  deficitX: number;
+  deficitX!: number;
 
   /**
    * Fecha de referencia para obtener consumos
