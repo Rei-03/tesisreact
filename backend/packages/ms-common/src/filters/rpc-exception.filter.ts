@@ -1,5 +1,6 @@
 import { Catch, RpcExceptionFilter, ArgumentsHost } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
+import { throwError } from 'rxjs';
 import { BaseRPCException, type IRPCError } from '../exceptions/base-rpc.exception';
 
 /**
@@ -16,7 +17,7 @@ export class CustomRpcExceptionFilter implements RpcExceptionFilter<RpcException
   catch(exception: RpcException, host: ArgumentsHost) {
     // Verificar si es una BaseRPCException
     if (exception instanceof BaseRPCException) {
-      return exception.getError();
+      return throwError(() => exception.getError());
     }
 
     // Para otras RpcExceptions, intentar extraer los datos
@@ -24,11 +25,11 @@ export class CustomRpcExceptionFilter implements RpcExceptionFilter<RpcException
 
     // Si ya tiene el formato correcto, devolverlo
     if (this.isFormattedError(error)) {
-      return error;
+      return throwError(() => error);
     }
 
     // Si no, construir el formato esperado
-    return this.formatError(error);
+    return throwError(() => this.formatError(error));
   }
 
   /**
