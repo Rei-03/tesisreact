@@ -19,21 +19,6 @@ export class CustomRpcExceptionFilter implements RpcExceptionFilter<RpcException
 
     // Verificar si es una BaseRPCException
     if (exception instanceof BaseRPCException) {
-<<<<<<< HEAD
-      return throwError(() => exception.getError());
-    }
-
-    // Para otras RpcExceptions, intentar extraer los datos
-    const error = exception.getError() as any;
-
-    // Si ya tiene el formato correcto, devolverlo
-    if (this.isFormattedError(error)) {
-      return throwError(() => error);
-    }
-
-    // Si no, construir el formato esperado
-    return throwError(() => this.formatError(error));
-=======
       errorResponse = exception.getError();
     } else {
       // Para otras RpcExceptions, intentar extraer los datos
@@ -50,7 +35,6 @@ export class CustomRpcExceptionFilter implements RpcExceptionFilter<RpcException
 
     // Retornar Observable con throwError
     return throwError(() => new RpcException(errorResponse));
->>>>>>> 924c361ec925f6dbd6411704bab4aebdf2c4209b
   }
 
   /**

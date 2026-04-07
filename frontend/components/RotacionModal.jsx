@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { apiClient } from "@/lib/api/apiClient";
 
 export default function RotacionModal({ 
   isOpen, 
@@ -21,7 +22,12 @@ export default function RotacionModal({
   cargando = false
 }) {
   const [paso, setPaso] = useState(1); // 1: Input MW, 2: Resultado
+  const [modo, setModo] = useState("automatica"); // "automatica" o "manual"
   const [mwRequerido, setMwRequerido] = useState("");
+  const [deficitX, setDeficitX] = useState("");
+  const [soloApagar, setSoloApagar] = useState(false);
+  const [cargandoRotacion, setCargandoRotacion] = useState(false);
+  const [resultadoRotacion, setResultadoRotacion] = useState(null);
   const [circuitosSeleccionados, setCircuitosSeleccionados] = useState([]);
   const [mwTotal, setMwTotal] = useState(0);
   const [error, setError] = useState(null);
@@ -31,7 +37,11 @@ export default function RotacionModal({
   // Resetear modal cuando se cierra
   useEffect(() => {
     if (!isOpen) {
+      setModo("automatica");
       setPaso(1);
+      setDeficitX("");
+      setSoloApagar(false);
+      setResultadoRotacion(null);
       setMwRequerido("");
       setCircuitosSeleccionados([]);
       setMwTotal(0);
@@ -40,6 +50,45 @@ export default function RotacionModal({
       setCircuitoSelectoParaAgregar("");
     }
   }, [isOpen]);
+
+  // ════════════════════════════════════════════════════════════════════
+  // MODO AUTOMÁTICO - Rotación por Déficit
+  // ════════════════════════════════════════════════════════════════════
+
+  const ejecutarRotacionAutomatica = async (e) => {
+    e.preventDefault();
+    
+    if (!deficitX || deficitX <= 0) {
+      setError("Por favor ingresa un déficit válido (mayor a 0)");
+      return;
+    }
+
+    try {
+      setCargandoRotacion(true);
+      setError(null);
+      
+      const resultado = await apiClient.rotaciones.generar({
+        deficitX: parseFloat(deficitX),
+        soloApagar: soloApagar,
+      });
+
+      if (resultado.success) {
+        setResultadoRotacion(resultado.data);
+        setPaso(2);
+      } else {
+        setError(resultado.error || "Error desconocido al generar rotación");
+      }
+    } catch (error) {
+      console.error("Error generando rotación:", error);
+      setError("Error al generar rotación: " + (error?.message || "Error desconocido"));
+    } finally {
+      setCargandoRotacion(false);
+    }
+  };
+
+  // ════════════════════════════════════════════════════════════════════
+  // MODO MANUAL - Selección de circuitos
+  // ════════════════════════════════════════════════════════════════════
 
   /**
    * Elimina un circuito de la selección
@@ -236,9 +285,67 @@ export default function RotacionModal({
         </div>
 
         <div className="p-6 space-y-6">
-          {/* PASO 1: INPUT MW */}
-          {paso === 1 && (
+          {/* PASO 1 - MODO AUTOMÁTICO */}
+          {paso === 1 && modo === "automatica" && (
+            <form id="form-rotacion-automatica" onSubmit={ejecutarRotacionAutomatica} className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm font-bold text-blue-900">⚡ Modo Automático</p>
+                <p className="text-sm text-blue-800 mt-1">
+                  Ingresa el déficit en MW y ejecuta la rotación automática
+                </p>
+              </div>
+
+              {/* INPUT DÉFICIT */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Déficit a Cubrir (MW) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={deficitX}
+                  onChange={(e) => setDeficitX(e.target.value)}
+                  placeholder="Ej: 50.5"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  required
+                  disabled={cargandoRotacion}
+                />
+              </div>
+
+              {/* CHECKBOX SOLO APAGAR */}
+              <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={soloApagar}
+                  onChange={(e) => setSoloApagar(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300"
+                  disabled={cargandoRotacion}
+                />
+                <span className="font-medium text-slate-700">
+                  Solo apagar (sin encender circuitos)
+                </span>
+              </label>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg flex items-start gap-2">
+                  <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+            </form>
+          )}
+
+          {/* PASO 1 - MODO MANUAL */}
+          {paso === 1 && modo === "manual" && (
             <div className="space-y-4">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <p className="text-sm font-bold text-purple-900">🔧 Modo Manual</p>
+                <p className="text-sm text-purple-800 mt-1">
+                  Selecciona manualmente los circuitos a apagar
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
                   ¿Cuántos MW deseas apagar?
@@ -266,7 +373,6 @@ export default function RotacionModal({
                 </p>
               </div>
 
-              {/* INFO DISPONIBLE */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm font-bold text-blue-900">
                   📊 Disponibilidad actual:
@@ -292,11 +398,114 @@ export default function RotacionModal({
                   <p className="text-sm">{error}</p>
                 </div>
               )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={seleccionarCircuitosPorMW}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+                >
+                  Seleccionar circuitos
+                </button>
+                <button
+                  onClick={() => setModo("automatica")}
+                  className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg font-bold transition-colors"
+                >
+                  Volver a Automático
+                </button>
+              </div>
             </div>
           )}
 
-          {/* PASO 2: RESULTADO */}
-          {paso === 2 && (
+          {/* PASO 2 - MODO AUTOMÁTICO - RESULTADOS */}
+          {paso === 2 && modo === "automatica" && resultadoRotacion && (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm font-bold text-green-900">✓ Rotación Generada</p>
+              </div>
+
+              {/* CIRCUITOS A APAGAR */}
+              {resultadoRotacion.cola && resultadoRotacion.cola.length > 0 && (
+                <div>
+                  <h4 className="font-bold text-red-700 mb-3 flex items-center gap-2">
+                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                    Circuitos a Apagar ({resultadoRotacion.cola.length})
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {resultadoRotacion.cola.map((circuitoId) => {
+                      const circuito = circuitosDisponibles.find(c => c.idCircuitoP === circuitoId);
+                      return (
+                        <div
+                          key={circuitoId}
+                          className="bg-red-50 border-l-4 border-red-500 p-2 rounded text-xs"
+                        >
+                          <p className="font-bold text-red-700">{circuitoId}</p>
+                          <p className="text-red-600 text-xs">
+                            {circuito?.CircuitoP || "Desconocido"}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* CIRCUITOS A ENCENDER */}
+              {resultadoRotacion.encendidos && resultadoRotacion.encendidos.length > 0 && (
+                <div>
+                  <h4 className="font-bold text-green-700 mb-3 flex items-center gap-2">
+                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                    Circuitos a Encender ({resultadoRotacion.encendidos.length})
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {resultadoRotacion.encendidos.map((circuitoId) => {
+                      const circuito = circuitosDisponibles.find(c => c.idCircuitoP === circuitoId);
+                      return (
+                        <div
+                          key={circuitoId}
+                          className="bg-green-50 border-l-4 border-green-500 p-2 rounded text-xs"
+                        >
+                          <p className="font-bold text-green-700">{circuitoId}</p>
+                          <p className="text-green-600 text-xs">
+                            {circuito?.CircuitoP || "Desconocido"}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg flex items-start gap-2">
+                  <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={onClose}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => {
+                    setPaso(1);
+                    setDeficitX("");
+                    setSoloApagar(false);
+                    setResultadoRotacion(null);
+                  }}
+                  className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg font-bold transition-colors"
+                >
+                  Nueva Rotación
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 2 - MODO MANUAL - RESULTADO */}
+          {paso === 2 && modo === "manual" && (
             <div className="space-y-4">
               {/* RESUMEN */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -330,11 +539,7 @@ export default function RotacionModal({
                   <span className="font-bold">
                     {(parseFloat(mwRequerido) * 1.2 - mwTotal).toFixed(2)} MW
                   </span>
-                  {" "}más (límite total:{" "}
-                  <span className="font-bold">
-                    {(parseFloat(mwRequerido) * 1.2).toFixed(2)} MW
-                  </span>
-                  )
+                  {" "}más
                 </p>
               </div>
 
@@ -356,9 +561,6 @@ export default function RotacionModal({
                         <th className="px-4 py-2 text-right font-semibold text-slate-700">
                           MW
                         </th>
-                        <th className="px-4 py-2 text-right font-semibold text-slate-700">
-                          Clientes
-                        </th>
                         <th className="px-4 py-2 text-center font-semibold text-slate-700">
                           Acción
                         </th>
@@ -366,7 +568,7 @@ export default function RotacionModal({
                     </thead>
                     <tbody className="divide-y">
                       {circuitosSeleccionados.map((circuito, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50">
+                        <tr key={`circ-${idx}`} className="hover:bg-slate-50">
                           <td className="px-4 py-2 font-medium text-blue-600">
                             {circuito.CircuitoP || circuito.nombre || "N/A"}
                           </td>
@@ -377,9 +579,6 @@ export default function RotacionModal({
                           </td>
                           <td className="px-4 py-2 text-right font-bold">
                             {(circuito.mw || circuito.MW || 0).toFixed(2)} MW
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            {(circuito.Clientes || circuito.clientes || 0).toLocaleString()}
                           </td>
                           <td className="px-4 py-2 text-center">
                             <button
@@ -398,11 +597,10 @@ export default function RotacionModal({
               </div>
 
               {/* AGREGAR CIRCUITO */}
-              <div className="border rounded-lg p-4 bg-slate-50">
-                <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                  <Plus size={18} className="text-blue-600" />
-                  Agregar Circuito
-                </h3>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Agregar más circuitos
+                </label>
                 <div className="flex gap-2">
                   <select
                     value={circuitoSelectoParaAgregar}
@@ -410,29 +608,22 @@ export default function RotacionModal({
                       setCircuitoSelectoParaAgregar(e.target.value);
                       setError(null);
                     }}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 outline-none"
                   >
-                    <option value="">— Selecciona un circuito —</option>
-                    {getCircuitosDisponiblesParaAgregar().map((circuito) => (
-                      <option key={circuito.idCircuitoP || circuito.id} value={circuito.idCircuitoP || circuito.id}>
-                        {circuito.CircuitoP || circuito.nombre || "N/A"} ({(circuito.mw || circuito.MW || 0).toFixed(2)} MW)
+                    <option value="">Selecciona un circuito...</option>
+                    {getCircuitosDisponiblesParaAgregar().map((circ) => (
+                      <option key={circ.idCircuitoP || circ.id} value={circ.idCircuitoP || circ.id}>
+                        {circ.CircuitoP || circ.nombre} ({(circ.mw || circ.MW || 0).toFixed(2)} MW)
                       </option>
                     ))}
                   </select>
                   <button
                     onClick={agregarCircuito}
-                    disabled={!circuitoSelectoParaAgregar}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg font-bold transition-colors flex items-center gap-2 text-sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition-colors"
                   >
-                    <Plus size={16} />
                     Agregar
                   </button>
                 </div>
-                {getCircuitosDisponiblesParaAgregar().length === 0 && (
-                  <p className="text-xs text-slate-500 mt-2">
-                    No hay circuitos disponibles para agregar
-                  </p>
-                )}
               </div>
 
               {error && (
@@ -444,29 +635,66 @@ export default function RotacionModal({
             </div>
           )}
         </div>
-
-        {/* FOOTER */}
         <div className="border-t p-6 bg-slate-50 flex gap-3 justify-end sticky bottom-0">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-slate-300 rounded-lg font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-            disabled={cargando || confirmando}
-          >
-            Cancelar
-          </button>
-
           {paso === 1 && (
-            <button
-              onClick={seleccionarCircuitosPorMW}
-              disabled={!mwRequerido || cargando}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg font-bold transition-colors"
-            >
-              <ChevronRight size={18} />
-              Seleccionar Circuitos
-            </button>
+            <>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border border-slate-300 rounded-lg font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              {modo === "automatica" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setModo("manual")}
+                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold transition-colors"
+                  >
+                    Modo Manual
+                  </button>
+                  <button
+                    type="submit"
+                    form="form-rotacion-automatica"
+                    disabled={cargandoRotacion || !deficitX}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-400 text-white rounded-lg font-bold transition-colors"
+                  >
+                    {cargandoRotacion ? (
+                      <>
+                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Generando...
+                      </>
+                    ) : (
+                      <>
+                        <Zap size={18} />
+                        Ejecutar Rotación
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+              {modo === "manual" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setModo("automatica")}
+                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold transition-colors"
+                  >
+                    Volver a Automático
+                  </button>
+                  <button
+                    onClick={seleccionarCircuitosPorMW}
+                    disabled={!mwRequerido}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg font-bold transition-colors"
+                  >
+                    Seleccionar Circuitos
+                  </button>
+                </>
+              )}
+            </>
           )}
 
-          {paso === 2 && (
+          {paso === 2 && modo === "manual" && (
             <>
               <button
                 onClick={() => setPaso(1)}
@@ -499,6 +727,28 @@ export default function RotacionModal({
                     Confirmar e Insertar
                   </>
                 )}
+              </button>
+            </>
+          )}
+
+          {paso === 2 && modo === "automatica" && (
+            <>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border border-slate-300 rounded-lg font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => {
+                  setPaso(1);
+                  setDeficitX("");
+                  setSoloApagar(false);
+                  setResultadoRotacion(null);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
+              >
+                Nueva Rotación
               </button>
             </>
           )}

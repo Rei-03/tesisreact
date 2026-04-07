@@ -23,6 +23,7 @@ export interface Apertura {
  * Filtra circuitos que son apagables
  */
 export function filtrarCircuitosApagables(circuitos: Circuito[]): Circuito[] {
+  if (!Array.isArray(circuitos)) return [];
   return circuitos.filter((c) => c.apagable === true || c.Apagable === true);
 }
 
@@ -30,6 +31,7 @@ export function filtrarCircuitosApagables(circuitos: Circuito[]): Circuito[] {
  * Ordena circuitos alfabéticamente por nombre
  */
 export function ordenarPorNombre(circuitos: Circuito[]): Circuito[] {
+  if (!Array.isArray(circuitos)) return [];
   return [...circuitos].sort((a, b) =>
     (a.CircuitoP || "").localeCompare(b.CircuitoP || "")
   );
@@ -42,6 +44,7 @@ export function filtrarPorBloque(
   circuitos: Circuito[],
   bloque: string | number | null
 ): Circuito[] {
+  if (!Array.isArray(circuitos)) return [];
   if (bloque === null || bloque === undefined || bloque === "") return circuitos;
   const bloqueStr = String(bloque);
   return circuitos.filter((c) => {
@@ -54,6 +57,7 @@ export function filtrarPorBloque(
  * Calcula el total de clientes en una lista de circuitos
  */
 export function calcularTotalClientes(circuitos: Circuito[]): number {
+  if (!Array.isArray(circuitos)) return 0;
   return circuitos.reduce((sum, c) => {
     const clientes = c.Clientes ?? c.clientes ?? 0;
     return sum + (Number(clientes) || 0);
@@ -64,6 +68,7 @@ export function calcularTotalClientes(circuitos: Circuito[]): number {
  * Calcula MW por bloque desde próximas aperturas
  */
 export function calcularMWPorBloque(aperturas: Apertura[]): Record<string, number> {
+  if (!Array.isArray(aperturas)) return {};
   const mwPorBloque: Record<string, number> = {};
 
   aperturas.forEach((apertura) => {
@@ -79,6 +84,12 @@ export function calcularMWPorBloque(aperturas: Apertura[]): Record<string, numbe
  * Obtiene los bloques únicos de una lista de circuitos
  */
 export function obtenerBloques(circuitos: Circuito[]): string[] {
+  // Asegurar que circuitos sea un array
+  if (!Array.isArray(circuitos)) {
+    console.warn("obtenerBloques: circuitos no es un array", circuitos);
+    return [];
+  }
+
   const bloques = new Set<string>();
   circuitos.forEach((c) => {
     const b = c.Bloque ?? c.bloque ?? null;

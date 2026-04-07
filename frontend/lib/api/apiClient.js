@@ -33,7 +33,8 @@ async function fetchWithFallback(url, options = {}) {
     const response = await axios.get(url, { timeout: 5000, ...options });
     return response.data;
   } catch (error) {
-    throw new Error()
+    console.warn(`API unavailable (${url}), usando datos mock:`, error?.message);
+    return null; // Retorna null para permitir fallback a mock
   }
 }
 
@@ -41,7 +42,7 @@ async function fetchWithFallback(url, options = {}) {
 const circuitos = {
   getAll: async () => {
     const data = await fetchWithFallback(`${API_BASE_URL}/circuitos`);
-    return data;
+    return data || circuitosMock;
   },
 
   getApagables: async () => {
@@ -172,9 +173,33 @@ const proximasAperturas = {
   },
 };
 
+// ROTACIONES API
+const rotaciones = {
+  generar: async (datos) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/rotaciones/generar`, datos);
+      return response.data;
+    } catch (error) {
+      console.error("Error generando rotación:", error);
+      throw error;
+    }
+  },
+
+  obtener: async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/rotaciones`);
+      return response.data;
+    } catch (error) {
+      console.error("Error obteniendo rotaciones:", error);
+      throw error;
+    }
+  },
+};
+
 // Exportar cliente API
 export const apiClient = {
   circuitos,
   aseguramientos,
   proximasAperturas,
+  rotaciones,
 };
