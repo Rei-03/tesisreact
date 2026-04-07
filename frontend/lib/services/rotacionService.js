@@ -9,22 +9,15 @@ import { apiClient } from "@/lib/api/apiClient";
 /**
  * Genera una rotación de circuitos
  * @param {Object} datos - Datos de la rotación
- * @param {Array} datos.circuitos_propuestos - IDs de circuitos a proponer para apagón
- * @param {number} datos.mw_requerido - MW requeridos a apagar
- * @param {number} datos.mw_total - MW total seleccionado
- * @param {number} datos.cantidad_circuitos - Cantidad de circuitos seleccionados
- * @param {string} datos.motivo - Motivo de la rotación (opcional)
+ * @param {number} datos.deficitX - MW de déficit a cubrir
+ * @param {boolean} datos.soloApagar - Si true, solo apaga. Si false, enciende También
+ * @param {string} datos.fecha - Fecha (opcional)
  * @returns {Promise<Object>} Respuesta del servidor con la rotación generada
  */
 export const generarRotacion = async (datos = {}) => {
   try {
-    // TODO: Conectar con el endpoint del backend cuando esté listo
-    // endpoint: POST /api/rotaciones/generar
-    
     console.log("Generando rotación con datos:", datos);
-    
-    // Por ahora, solo mostramos un mensaje
-    const response = await axios.post("/rotaciones", datos);
+    const response = await apiClient.rotaciones.generar(datos);
     return response.data;
   } catch (error) {
     console.error("Error generando rotación:", error);
@@ -38,11 +31,8 @@ export const generarRotacion = async (datos = {}) => {
  */
 export const obtenerRotaciones = async () => {
   try {
-    // TODO: Conectar con el endpoint del backend cuando esté listo
-    // endpoint: GET /api/rotaciones
-    
-    const response = await axios.get("/rotaciones/historial");
-    return response.data;
+    const response = await apiClient.rotaciones.obtener();
+    return response;
   } catch (error) {
     console.error("Error obteniendo rotaciones:", error);
     throw error;

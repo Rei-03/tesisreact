@@ -29,6 +29,7 @@ export default function CircuitosPage() {
   const [pagina, setPagina] = useState(1);
   const [modalRotacionAbierto, setModalRotacionAbierto] = useState(false);
   const [mensajeRotacion, setMensajeRotacion] = useState(null);
+  
   const circuitosPorPagina = 10;
 
   // CARGAR DATOS
@@ -41,9 +42,10 @@ export default function CircuitosPage() {
       setCargando(true);
       setError(null);
       const datos = await apiClient.circuitos.getAll();
-      setCircuitos(datos);
+      setCircuitos(Array.isArray(datos) ? datos : []);
     } catch (err) {
       setError("Error cargando circuitos: " + (err?.message || "Error desconocido"));
+      setCircuitos([]);
     } finally {
       setCargando(false);
     }
@@ -69,6 +71,7 @@ export default function CircuitosPage() {
     }
   };
 
+  // GENERAR ROTACIÓN DE CIRCUITOS
   // FILTRAR DATOS
   let circuitosFiltrados = [...circuitos];
   if (soloApagables) {
@@ -164,6 +167,8 @@ export default function CircuitosPage() {
           </div>
         </div>
       )}
+
+      {/* FORMULARIO DE ROTACIÓN - AHORA EN EL MODAL ROTACIONMODAL.JSX */}
 
       {/* FILTROS */}
       <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
@@ -267,7 +272,7 @@ export default function CircuitosPage() {
                   </tr>
                 ))
               ) : (
-                <tr>
+                <tr key="no-data">
                   <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                     No hay circuitos que coincidan con los filtros
                   </td>
