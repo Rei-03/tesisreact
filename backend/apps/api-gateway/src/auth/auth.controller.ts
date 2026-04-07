@@ -1,6 +1,14 @@
-import { Controller, Post, Body, Inject } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Inject,
+  Req,
+  Get,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { Request } from 'express';
 import {
   RegisterDto,
   LoginDto,
@@ -8,6 +16,8 @@ import {
   VerifyTokenDto,
   RefreshTokenDto,
 } from './dto';
+import { Public } from './decorators';
+import { UserRole } from './dto/user-role.enum';
 
 @Controller('auth')
 export class AuthController {
@@ -15,8 +25,9 @@ export class AuthController {
 
   /**
    * Register a new user
-   * Maps to auth.register message pattern
+   * No authentication required
    */
+  @Public()
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     return firstValueFrom(
@@ -26,8 +37,10 @@ export class AuthController {
 
   /**
    * Login with email and password
-   * Maps to auth.login message pattern
+   * Returns access and refresh tokens
+   * No authentication required
    */
+  @Public()
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return firstValueFrom(
@@ -36,35 +49,64 @@ export class AuthController {
   }
 
   /**
-   * Logout user and revoke session
-   * Maps to auth.logout message pattern
-   */
-  @Post('logout')
-  async logout(@Body() logoutDto: LogoutDto) {
-    return firstValueFrom(
-      this.client.send('auth.logout', logoutDto)
-    );
-  }
-
-  /**
-   * Verify JWT token validity
-   * Maps to auth.token.verify message pattern
-   */
-  @Post('verify')
-  async verifyToken(@Body() verifyTokenDto: VerifyTokenDto) {
-    return firstValueFrom(
-      this.client.send('auth.token.verify', verifyTokenDto)
-    );
-  }
-
-  /**
    * Refresh JWT tokens using refresh token
-   * Maps to auth.token.refresh message pattern
+   * Returns new access and refresh tokens
+   * No authentication required (uses refresh token)
    */
+  @Public()
   @Post('refresh')
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
     return firstValueFrom(
       this.client.send('auth.token.refresh', refreshTokenDto)
     );
   }
+
+  /**
+   * Verify JWT token validity
+   * Protected: requires valid JWT (AuthGuard global)
+   */
+  @Post('verify')
+  async verifyToken(
+    @Body() verifyTokenDto: VerifyTokenDto,
+    @Req() req: Request & { user: any }
+  ) {
+    return firstValueFrom(
+      this.client.send('auth.token.verify', verifyTokenDto)
+    );
+  }
+
+  /**
+   * Logout user and revoke session
+   * Protected: requires valid JWT (AuthGuard global)
+   * Invalidates the token by adding it to blacklist
+   */
+  @Post('logout')
+  async logout(
+    @Body() logoutDto: LogoutDto,
+    @Req() req: Request & { user: any }
+  ) {
+    // Si no se proporciona userId, usar el del token autenticado
+    const userId = logoutDto.userId || req.user.userId;
+
+    return firstValueFrom(
+      this.client.send('auth.logout', {
+        ...logoutDto,
+        userId,
+      })
+    );
+  }
+
+  /**
+   * Get current user info from token
+   * Protected: requires valid JWT (AuthGuard global)
+   */
+  @Post('me')
+  async getMe(@Req() req: Request & { user: any }) {
+    return {
+      success: true,
+      message: 'Usuario autenticado',
+      data: req.user,
+    };
+  }
 }
+

@@ -19,6 +19,11 @@ export class CircuitosController {
     return this.circuitosService.findAllWithConsumption(payload);
   }
 
+  @MessagePattern('circuitos.findWithConsumptionAndApagones')
+  findWithConsumptionAndApagones(@Payload() payload: FindConsumptionByDateDto) {
+    return this.circuitosService.findWithConsumptionAndApagones(payload);
+  }
+
   @MessagePattern('circuitos.findOne')
   findOne(@Payload() data: { id: number }) {
     return this.circuitosService.findOne(data.id);

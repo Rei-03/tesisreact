@@ -15,8 +15,11 @@ import { BaseRPCException, type IRPCError } from '../exceptions/base-rpc.excepti
 @Catch(RpcException)
 export class CustomRpcExceptionFilter implements RpcExceptionFilter<RpcException> {
   catch(exception: RpcException, host: ArgumentsHost) {
+    let errorResponse: IRPCError;
+
     // Verificar si es una BaseRPCException
     if (exception instanceof BaseRPCException) {
+<<<<<<< HEAD
       return throwError(() => exception.getError());
     }
 
@@ -30,6 +33,24 @@ export class CustomRpcExceptionFilter implements RpcExceptionFilter<RpcException
 
     // Si no, construir el formato esperado
     return throwError(() => this.formatError(error));
+=======
+      errorResponse = exception.getError();
+    } else {
+      // Para otras RpcExceptions, intentar extraer los datos
+      const error = exception.getError() as any;
+
+      // Si ya tiene el formato correcto, usar directamente
+      if (this.isFormattedError(error)) {
+        errorResponse = error;
+      } else {
+        // Si no, construir el formato esperado
+        errorResponse = this.formatError(error);
+      }
+    }
+
+    // Retornar Observable con throwError
+    return throwError(() => new RpcException(errorResponse));
+>>>>>>> 924c361ec925f6dbd6411704bab4aebdf2c4209b
   }
 
   /**
