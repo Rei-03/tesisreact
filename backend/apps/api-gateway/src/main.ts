@@ -1,4 +1,3 @@
-import './types/express';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { HttpErrorFilter } from '@une/ms-common/filters';

@@ -18,6 +18,10 @@ import {
   descargarReporteEstadisticoPDF,
   obtenerEstadisticasReportes,
 } from "@/lib/services/reportesService";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import AlertMessage from "@/components/shared/AlertMessage";
+import ReportesFilters from "@/components/reportes/ReportesFilters";
+import ReportesTable from "@/components/reportes/ReportesTable";
 
 export default function ReportesPage() {
   const [reportes, setReportes] = useState([]);
@@ -167,29 +171,28 @@ export default function ReportesPage() {
   };
 
   if (cargando) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-slate-600">Cargando reportes...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando reportes..." />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto space-y-8">
       {/* Cabecera */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">
-            Módulo de Reportes y Exportación
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Genera, visualiza y descarga reportes en PDF y Excel
-          </p>
+          <h2 className="text-2xl font-bold text-slate-800">Módulo de Reportes y Exportación</h2>
+          <p className="text-sm text-slate-500 mt-1">Genera, visualiza y descarga reportes en PDF y Excel</p>
         </div>
       </div>
+
+      {/* Mensaje de error */}
+      {error && (
+        <AlertMessage
+          type="error"
+          title="Error"
+          message={error}
+          onClose={() => setError(null)}
+        />
+      )}
 
       {/* Tabs de navegación */}
       <div className="bg-white rounded-xl shadow-sm border">
@@ -227,160 +230,25 @@ export default function ReportesPage() {
         </div>
       </div>
 
-      {/* Mensaje de error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg flex items-start gap-3">
-          <AlertCircle size={20} className="mt-0.5 shrink-0" />
-          <div>
-            <p className="font-bold">Error</p>
-            <p className="text-sm">{error}</p>
-          </div>
-        </div>
-      )}
-
       {/* TAB 1: HISTORIAL DE REPORTES */}
       {tabActiva === "reportes" && (
         <>
-          {/* Filtros de búsqueda */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border space-y-4">
-            <h3 className="font-semibold text-slate-800">Filtrar Reportes</h3>
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">
-                  Desde
-                </label>
-                <input
-                  type="date"
-                  value={filtroDesde}
-                  onChange={(e) => setFiltroDesde(e.target.value)}
-                  className="border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">
-                  Hasta
-                </label>
-                <input
-                  type="date"
-                  value={filtroHasta}
-                  onChange={(e) => setFiltroHasta(e.target.value)}
-                  className="border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <button
-                onClick={handleFiltrar}
-                className="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-slate-700 transition-all"
-              >
-                <Search size={18} /> Filtrar
-              </button>
-              <button
-                onClick={limpiarFiltros}
-                className="bg-slate-200 text-slate-800 px-6 py-2 rounded-lg font-bold hover:bg-slate-300 transition-all"
-              >
-                Limpiar
-              </button>
-            </div>
-          </div>
+          <ReportesFilters
+            filtroDesde={filtroDesde}
+            setFiltroDesde={setFiltroDesde}
+            filtroHasta={filtroHasta}
+            setFiltroHasta={setFiltroHasta}
+            onFiltrar={handleFiltrar}
+            onLimpiar={limpiarFiltros}
+          />
 
-          {/* Tabla de Reportes */}
-          <div className="bg-white rounded-xl shadow-md border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 border-b text-slate-600 text-xs uppercase font-bold">
-                  <tr>
-                    <th className="p-4">Fecha y Hora</th>
-                    <th className="p-4">Tipo de Reporte</th>
-                    <th className="p-4">Generado por</th>
-                    <th className="p-4">Circuitos</th>
-                    <th className="p-4">MW Totales</th>
-                    <th className="p-4 text-right">Descargas</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {reportesFiltrados.length > 0 ? (
-                    reportesFiltrados.map((reporte) => (
-                      <tr
-                        key={reporte.id || reporte.idRotacion}
-                        className="hover:bg-slate-50 transition-colors"
-                      >
-                        <td className="p-4 font-mono text-sm">
-                          {formatearFecha(reporte.fecha || reporte.createdAt)}
-                        </td>
-                        <td className="p-4">
-                          <span className="flex items-center gap-2">
-                            <FileText size={16} className="text-blue-500" />
-                            {reporte.tipo || "Rotación"}
-                            {reporte.bloque && ` - Bloque ${reporte.bloque}`}
-                          </span>
-                        </td>
-                        <td className="p-4 text-sm font-medium text-slate-600">
-                          {reporte.generadoPor || reporte.usuario || "Sistema"}
-                        </td>
-                        <td className="p-4 text-center font-semibold">
-                          {reporte.cantidadCircuitos ||
-                            reporte.cantidad_circuitos ||
-                            0}
-                        </td>
-                        <td className="p-4 font-bold text-red-600">
-                          {reporte.mwTotal || reporte.mw_total || 0} MW
-                        </td>
-                        <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() =>
-                                handleDescargarPDF(
-                                  reporte.id || reporte.idRotacion
-                                )
-                              }
-                              disabled={
-                                descargando === `pdf-${reporte.id || reporte.idRotacion}`
-                              }
-                              className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Descargar PDF"
-                            >
-                              {descargando === `pdf-${reporte.id || reporte.idRotacion}` ? (
-                                <Loader size={20} className="animate-spin" />
-                              ) : (
-                                <Download size={20} />
-                              )}
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleDescargarExcel(
-                                  reporte.id || reporte.idRotacion
-                                )
-                              }
-                              disabled={
-                                descargando === `excel-${reporte.id || reporte.idRotacion}`
-                              }
-                              className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Descargar Excel"
-                            >
-                              {descargando === `excel-${reporte.id || reporte.idRotacion}` ? (
-                                <Loader size={20} className="animate-spin" />
-                              ) : (
-                                <Download size={20} />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="p-8 text-center text-slate-500">
-                        {reportes.length === 0
-                          ? "No hay reportes generados aún"
-                          : "No hay reportes que coincidan con los filtros"}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <ReportesTable
+            reportes={reportesFiltrados}
+            onDescargarPDF={handleDescargarPDF}
+            onDescargarExcel={handleDescargarExcel}
+            descargando={descargando}
+          />
 
-          {/* Nota informativa */}
           {reportesFiltrados.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg text-sm">
               <p className="font-semibold">💡 Información</p>
@@ -397,9 +265,7 @@ export default function ReportesPage() {
       {tabActiva === "aseguramientos" && (
         <div className="space-y-4">
           <div className="bg-white p-6 rounded-xl shadow-md border">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">
-              Reportes de Aseguramientos
-            </h3>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Reportes de Aseguramientos</h3>
             <p className="text-slate-600 mb-6">
               Descarga reportes detallados de todos los circuitos asegurados en el sistema.
             </p>
@@ -413,13 +279,9 @@ export default function ReportesPage() {
                 <FileText size={24} className="text-red-600" />
                 <div className="text-left">
                   <p className="font-bold text-slate-800">Descargar PDF</p>
-                  <p className="text-xs text-slate-500">
-                    Formato de documento profesional
-                  </p>
+                  <p className="text-xs text-slate-500">Formato de documento profesional</p>
                 </div>
-                {descargando === "aseg-pdf" && (
-                  <Loader size={20} className="animate-spin ml-auto" />
-                )}
+                {descargando === "aseg-pdf" && <Loader size={20} className="animate-spin ml-auto" />}
               </button>
 
               <button
@@ -430,13 +292,9 @@ export default function ReportesPage() {
                 <FileText size={24} className="text-green-600" />
                 <div className="text-left">
                   <p className="font-bold text-slate-800">Descargar Excel</p>
-                  <p className="text-xs text-slate-500">
-                    Para análisis y cálculos
-                  </p>
+                  <p className="text-xs text-slate-500">Para análisis y cálculos</p>
                 </div>
-                {descargando === "aseg-excel" && (
-                  <Loader size={20} className="animate-spin ml-auto" />
-                )}
+                {descargando === "aseg-excel" && <Loader size={20} className="animate-spin ml-auto" />}
               </button>
             </div>
           </div>
@@ -458,40 +316,25 @@ export default function ReportesPage() {
       {/* TAB 3: ESTADÍSTICAS */}
       {tabActiva === "estadisticas" && (
         <div className="space-y-4">
-          {/* Tarjetas de estadísticas */}
           {estadisticas && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-4 rounded-lg border shadow-sm">
-                <p className="text-xs text-slate-500 uppercase font-bold">
-                  Total Reportes
-                </p>
-                <p className="text-2xl font-bold text-slate-800 mt-2">
-                  {estadisticas.totalReportes}
-                </p>
+                <p className="text-xs text-slate-500 uppercase font-bold">Total Reportes</p>
+                <p className="text-2xl font-bold text-slate-800 mt-2">{estadisticas.totalReportes}</p>
               </div>
 
               <div className="bg-white p-4 rounded-lg border shadow-sm">
-                <p className="text-xs text-slate-500 uppercase font-bold">
-                  Circuitos Apagables
-                </p>
-                <p className="text-2xl font-bold text-blue-600 mt-2">
-                  {estadisticas.circuitosApagables}
-                </p>
+                <p className="text-xs text-slate-500 uppercase font-bold">Circuitos Apagables</p>
+                <p className="text-2xl font-bold text-blue-600 mt-2">{estadisticas.circuitosApagables}</p>
               </div>
 
               <div className="bg-white p-4 rounded-lg border shadow-sm">
-                <p className="text-xs text-slate-500 uppercase font-bold">
-                  MW Total Apagado
-                </p>
-                <p className="text-2xl font-bold text-red-600 mt-2">
-                  {estadisticas.mwTotalApagado} MW
-                </p>
+                <p className="text-xs text-slate-500 uppercase font-bold">MW Total Apagado</p>
+                <p className="text-2xl font-bold text-red-600 mt-2">{estadisticas.mwTotalApagado} MW</p>
               </div>
 
               <div className="bg-white p-4 rounded-lg border shadow-sm">
-                <p className="text-xs text-slate-500 uppercase font-bold">
-                  Promedio MW
-                </p>
+                <p className="text-xs text-slate-500 uppercase font-bold">Promedio MW</p>
                 <p className="text-2xl font-bold text-green-600 mt-2">
                   {estadisticas.promedioMWPorRotacion.toFixed(1)} MW
                 </p>
@@ -499,11 +342,8 @@ export default function ReportesPage() {
             </div>
           )}
 
-          {/* Descargar reporte estadístico */}
           <div className="bg-white p-6 rounded-xl shadow-md border">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">
-              Reporte Estadístico General
-            </h3>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Reporte Estadístico General</h3>
             <p className="text-slate-600 mb-6">
               Descarga un análisis completo de estadísticas del sistema con gráficos y comparativas.
             </p>

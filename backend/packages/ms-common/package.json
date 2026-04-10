@@ -6,22 +6,22 @@
   "private": true,
   "license": "UNLICENSED",
   "main": "./dist/index.js",
-  "types": "./src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "import": "./src/index.js",
-      "require": "./src/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
     },
     "./filters": {
-      "types": "./src/filters/index.d.ts",
-      "import": "./src/filters/index.js",
-      "require": "./src/filters/index.js"
+      "types": "./dist/filters/index.d.ts",
+      "import": "./dist/filters/index.js",
+      "require": "./dist/filters/index.js"
     },
     "./exceptions": {
-      "types": "./src/exceptions/index.d.ts",
-      "import": "./src/exceptions/index.js",
-      "require": "./src/exceptions/index.js"
+      "types": "./dist/exceptions/index.d.ts",
+      "import": "./dist/exceptions/index.js",
+      "require": "./dist/exceptions/index.js"
     }
   },
   "scripts": {

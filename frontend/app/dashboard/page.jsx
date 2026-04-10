@@ -2,26 +2,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import {
-  Activity,
   AlertTriangle,
-  BarChart3,
   Grid3x3,
   Zap,
-  Users,
   Shield,
 } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { apiClient } from "@/lib/api/apiClient";
 import { generarRotacion } from "@/lib/services/rotacionService";
 import RotacionModal from "@/components/RotacionModal";
@@ -30,6 +15,11 @@ import {
   calcularMWPorBloque,
 } from "@/lib/utils/circuitUtils";
 import { getToday } from "@/lib/utils/dateUtils";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import AlertMessage from "@/components/shared/AlertMessage";
+import DashboardMetricCard from "@/components/dashboard/DashboardMetricCard";
+import DashboardCharts from "@/components/dashboard/DashboardCharts";
+import DashboardAseguramientosTable from "@/components/dashboard/DashboardAseguramientosTable";
 
 export default function DashboardPage() {
   const [circuitos, setCircuitos] = useState([]);
@@ -106,14 +96,7 @@ export default function DashboardPage() {
   ];
 
   if (cargando) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-slate-600">Cargando dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando dashboard..." />;
   }
 
   return (
@@ -135,176 +118,58 @@ export default function DashboardPage() {
 
       {/* MENSAJE DE ROTACIÓN */}
       {mensajeRotacion && (
-        <div
-          className={`p-4 rounded-lg border flex items-start gap-3 ${
-            mensajeRotacion.tipo === "éxito"
-              ? "bg-green-50 border-green-200 text-green-800"
-              : "bg-red-50 border-red-200 text-red-800"
-          }`}
-        >
-          <AlertTriangle size={20} className="mt-0.5 shrink-0" />
-          <div>
-            <p className="font-bold">
-              {mensajeRotacion.tipo === "éxito" ? "Éxito" : "Error"}
-            </p>
-            <p className="text-sm">{mensajeRotacion.texto}</p>
-          </div>
-        </div>
+        <AlertMessage
+          type={mensajeRotacion.tipo}
+          title={mensajeRotacion.tipo === "éxito" ? "Éxito" : "Error"}
+          message={mensajeRotacion.texto}
+          onClose={() => setMensajeRotacion(null)}
+        />
       )}
 
       {/* TARJETAS DE RESUMEN */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Circuitos Apagables */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-500 font-medium">Circuitos Apagables</p>
-              <h3 className="text-3xl font-bold text-slate-800 mt-2">{totalCircuitosApagables}</h3>
-              <p className="text-xs text-slate-400 mt-2">{totalClientes.toLocaleString()} clientes</p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Grid3x3 className="text-blue-600" size={24} />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Aseguramientos Hoy */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-500 font-medium">Aseguramientos Hoy</p>
-              <h3 className="text-3xl font-bold text-slate-800 mt-2">{totalAseguramientosHoy}</h3>
-              <p className="text-xs text-slate-400 mt-2">{totalMWAsegurado.toFixed(1)} MW protegidos</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-lg">
-              <Shield className="text-green-600" size={24} />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: MW Total Disponible */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-500 font-medium">MW Hora Actual</p>
-              <h3 className="text-3xl font-bold text-slate-800 mt-2">
-                {Object.values(mwPorBloque)
-                  .reduce((a, b) => a + b, 0)
-                  .toFixed(1)}
-              </h3>
-              <p className="text-xs text-slate-400 mt-2">{proxAperturas.length} circuitos monitoreados</p>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-lg">
-              <Zap className="text-yellow-600" size={24} />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 4: Próximas Aperturas */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-500 font-medium">Próx. Aperturas</p>
-              <h3 className="text-3xl font-bold text-slate-800 mt-2">{proxAperturas.length}</h3>
-              <p className="text-xs text-slate-400 mt-2">Agrupadas por bloque</p>
-            </div>
-            <div className="bg-red-100 p-3 rounded-lg">
-              <AlertTriangle className="text-red-600" size={24} />
-            </div>
-          </div>
-        </div>
+        <DashboardMetricCard
+          icon={Grid3x3}
+          title="Circuitos Apagables"
+          value={totalCircuitosApagables}
+          subtitle={`${totalClientes.toLocaleString()} clientes`}
+          bgColor="border-blue-500"
+          iconBgColor="bg-blue-100 text-blue-600"
+        />
+        <DashboardMetricCard
+          icon={Shield}
+          title="Aseguramientos Hoy"
+          value={totalAseguramientosHoy}
+          subtitle={`${totalMWAsegurado.toFixed(1)} MW protegidos`}
+          bgColor="border-green-500"
+          iconBgColor="bg-green-100 text-green-600"
+        />
+        <DashboardMetricCard
+          icon={Zap}
+          title="MW Hora Actual"
+          value={Object.values(mwPorBloque).reduce((a, b) => a + b, 0).toFixed(1)}
+          subtitle={`${proxAperturas.length} circuitos monitoreados`}
+          bgColor="border-yellow-500"
+          iconBgColor="bg-yellow-100 text-yellow-600"
+        />
+        <DashboardMetricCard
+          icon={AlertTriangle}
+          title="Próx. Aperturas"
+          value={proxAperturas.length}
+          subtitle="Agrupadas por bloque"
+          bgColor="border-red-500"
+          iconBgColor="bg-red-100 text-red-600"
+        />
       </div>
 
       {/* GRÁFICOS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Gráfico: MW por Bloque */}
-        <div className="bg-white p-6 rounded-xl shadow-md border border-slate-200">
-          <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-            <BarChart3 className="text-blue-600" size={20} /> MW por Bloque (Hora Actual)
-          </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dataGraficoMW}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="bloque" stroke="#64748b" fontSize={12} />
-                <YAxis stroke="#64748b" fontSize={12} tickFormatter={(v) => `${v}MW`} />
-                <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
-                <Bar dataKey="MW" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Gráfico: Déficit vs Asegurados */}
-        <div className="bg-white p-6 rounded-xl shadow-md border border-slate-200">
-          <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-            <Activity className="text-green-600" size={20} /> Evolución Déficit (24h)
-          </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dataGraficoHora}>
-                <defs>
-                  <linearGradient id="colorDeficit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorAsegurados" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="hora" stroke="#64748b" fontSize={12} />
-                <YAxis stroke="#64748b" fontSize={12} tickFormatter={(v) => `${v}MW`} />
-                <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
-                <Legend />
-                <Area type="monotone" dataKey="deficit" stroke="#ef4444" name="Déficit" fill="url(#colorDeficit)" strokeWidth={2} />
-                <Area type="monotone" dataKey="asegurados" stroke="#10b981" name="Asegurados" fill="url(#colorAsegurados)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+      <DashboardCharts
+        mwData={dataGraficoMW}
+        horaData={dataGraficoHora}
+      />
 
       {/* TABLA: Últimos Aseguramientos */}
-      <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b font-bold text-slate-700 flex items-center gap-2">
-          <Shield className="text-green-600" size={18} /> Aseguramientos Activos Hoy
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-800 text-white">
-              <tr>
-                <th className="px-6 py-3 font-semibold">Circuito</th>
-                <th className="px-6 py-3 font-semibold">Tipo</th>
-                <th className="px-6 py-3 font-semibold text-center">MW</th>
-                <th className="px-6 py-3 font-semibold">Observaciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {aseguramientos.slice(0, 5).map((asg, idx) => (
-                <tr key={idx} className="hover:bg-slate-50">
-                  <td className="px-6 py-3 font-bold text-blue-600">{asg.CircuitoP}</td>
-                  <td className="px-6 py-3">
-                    <span className="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold">
-                      {asg.tipo}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-center font-bold">{asg.mw?.toFixed(1) || "—"} MW</td>
-                  <td className="px-6 py-3 text-slate-600 text-xs">{asg.Observaciones}</td>
-                </tr>
-              ))}
-              {aseguramientos.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
-                    No hay aseguramientos activos hoy
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DashboardAseguramientosTable aseguramientos={aseguramientos} />
 
       {/* MODAL DE ROTACIÓN */}
       <RotacionModal

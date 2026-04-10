@@ -8,7 +8,34 @@
 import axios from 'axios';
 import { circuitosMock, aseguramientosMock, proxAperturasMock } from "@/data/mock";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+// Crear instancia de axios con configuración base
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:3001',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor para agregar token a todas las peticiones
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Aquí puedes agregar lógica para obtener el token si es necesario
+    // Por ahora, solo configuramos headers básicos
+    if (typeof window !== 'undefined') {
+      // Si tienes autenticación, descomenta esto:
+      // const token = localStorage.getItem('token');
+      // if (token) {
+      //   config.headers.Authorization = `Bearer ${token}`;
+      // }
+      config.withCredentials = false; // Cambia a true si necesitas cookies
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 let apiAvailable = null; // Caché de disponibilidad de API
 
 // Verificar si la API está disponible
@@ -16,7 +43,7 @@ async function checkApiAvailability() {
   if (apiAvailable !== null) return apiAvailable;
   
   try {
-    await axios.head(`${API_BASE_URL}/health`, {
+    await axiosInstance.head(`/api/health`, {
       timeout: 2000
     });
     apiAvailable = true;
@@ -30,7 +57,7 @@ async function checkApiAvailability() {
 // Ejecutar con fallback a mock
 async function fetchWithFallback(url, options = {}) {
   try {
-    const response = await axios.get(url, { timeout: 5000, ...options });
+    const response = await axiosInstance.get(url, { timeout: 5000, ...options });
     return response.data;
   } catch (error) {
     console.warn(`API unavailable (${url}), usando datos mock:`, error?.message);
@@ -41,23 +68,23 @@ async function fetchWithFallback(url, options = {}) {
 // CIRCUITOS API
 const circuitos = {
   getAll: async () => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/circuitos`);
+    const data = await fetchWithFallback(`/api/circuitos`);
     return data || circuitosMock;
   },
 
   getApagables: async () => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/circuitos/apagables`);
+    const data = await fetchWithFallback(`/api/circuitos/apagables`);
     return data || circuitosMock.filter(c => c.Apagable === true);
   },
 
   getById: async (id) => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/circuitos/${id}`);
+    const data = await fetchWithFallback(`/api/circuitos/${id}`);
     return data || circuitosMock.find(c => c.idCircuitoP === id) || null;
   },
 
   update: async (id, updateData) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/circuitos/${id}`, updateData);
+      const response = await axiosInstance.put(`/api/circuitos/${id}`, updateData);
       return response.data;
     } catch (error) {
       console.error(`Error updating circuit ${id}:`, error);
@@ -67,7 +94,7 @@ const circuitos = {
 
   delete: async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/circuitos/${id}`);
+      const response = await axiosInstance.delete(`/api/circuitos/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting circuit ${id}:`, error);
@@ -79,12 +106,12 @@ const circuitos = {
 // ASEGURAMIENTOS API
 const aseguramientos = {
   getAll: async () => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/aseguramientos`);
+    const data = await fetchWithFallback(`/api/aseguramientos`);
     return data || aseguramientosMock;
   },
 
   getByFecha: async (fecha) => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/aseguramientos/fecha/${fecha}`);
+    const data = await fetchWithFallback(`/api/aseguramientos/fecha/${fecha}`);
     if (data) return data;
     
     // Mock: filtrar aseguramientos que incluyan la fecha
@@ -95,13 +122,13 @@ const aseguramientos = {
   },
 
   getById: async (id) => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/aseguramientos/${id}`);
+    const data = await fetchWithFallback(`/api/aseguramientos/${id}`);
     return data || aseguramientosMock.find(a => a.id_CircuitoP === id) || null;
   },
 
   create: async (createData) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/aseguramientos`, createData);
+      const response = await axiosInstance.post(`/api/aseguramientos`, createData);
       return response.data;
     } catch (error) {
       console.error("Error creating aseguramiento:", error);
@@ -111,7 +138,7 @@ const aseguramientos = {
 
   update: async (id, updateData) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/aseguramientos/${id}`, updateData);
+      const response = await axiosInstance.put(`/api/aseguramientos/${id}`, updateData);
       return response.data;
     } catch (error) {
       console.error(`Error updating aseguramiento ${id}:`, error);
@@ -121,7 +148,7 @@ const aseguramientos = {
 
   delete: async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/aseguramientos/${id}`);
+      const response = await axiosInstance.delete(`/api/aseguramientos/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting aseguramiento ${id}:`, error);
@@ -133,18 +160,18 @@ const aseguramientos = {
 // PRÓXIMAS APERTURAS API
 const proximasAperturas = {
   getAll: async () => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/proximasAperturas`);
+    const data = await fetchWithFallback(`/api/proximasAperturas`);
     return data || proxAperturasMock;
   },
 
   getById: async (id) => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/proximasAperturas/${id}`);
+    const data = await fetchWithFallback(`/api/proximasAperturas/${id}`);
     return data || proxAperturasMock.find(p => p.id_Circuito === id) || null;
   },
 
   create: async (createData) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/proximasAperturas`, createData);
+      const response = await axiosInstance.post(`/api/proximasAperturas`, createData);
       return response.data;
     } catch (error) {
       console.error("Error creating próxima apertura:", error);
@@ -154,7 +181,7 @@ const proximasAperturas = {
 
   update: async (id, updateData) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/proximasAperturas/${id}`, updateData);
+      const response = await axiosInstance.put(`/api/proximasAperturas/${id}`, updateData);
       return response.data;
     } catch (error) {
       console.error(`Error updating próxima apertura ${id}:`, error);
@@ -164,7 +191,7 @@ const proximasAperturas = {
 
   delete: async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/proximasAperturas/${id}`);
+      const response = await axiosInstance.delete(`/api/proximasAperturas/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting próxima apertura ${id}:`, error);
@@ -177,7 +204,7 @@ const proximasAperturas = {
 const rotaciones = {
   generar: async (datos) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/rotaciones/generar`, datos);
+      const response = await axiosInstance.post(`/api/rotaciones/generar`, datos);
       return response.data;
     } catch (error) {
       console.error("Error generando rotación:", error);
@@ -187,7 +214,7 @@ const rotaciones = {
 
   obtener: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/rotaciones`);
+      const response = await axiosInstance.get(`/api/rotaciones`);
       return response.data;
     } catch (error) {
       console.error("Error obteniendo rotaciones:", error);
@@ -203,3 +230,5 @@ export const apiClient = {
   proximasAperturas,
   rotaciones,
 };
+
+export default axiosInstance;
