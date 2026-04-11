@@ -21,10 +21,10 @@ import { env } from '../config/env';
     JwtAuthGuard,
     RolesGuard,
     AuthGuard,
-    {
-      provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: AuthGuard,
+    // },
   ],
   exports: [JwtAuthGuard, RolesGuard, AuthGuard],
 })

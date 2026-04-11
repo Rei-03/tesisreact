@@ -5,6 +5,7 @@ import {
   Inject,
   Req,
   Get,
+  Query,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -107,6 +108,25 @@ export class AuthController {
       message: 'Usuario autenticado',
       data: req.user,
     };
+  }
+
+  /**
+   * Get all users with pagination
+   * Protected: requires valid JWT (AuthGuard global)
+   */
+  @Get('users')
+  async findAll(
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+  ) {
+    const pageNum = page ? Number(page) : 1;
+    const pageSizeNum = pageSize ? Number(pageSize) : 20;
+    return firstValueFrom(
+      this.client.send('auth.findAll', {
+        page: pageNum,
+        pageSize: pageSizeNum,
+      })
+    );
   }
 }
 

@@ -12,13 +12,6 @@ import * as XLSX from "xlsx";
 import { apiClient } from "@/lib/api/apiClient";
 import { generarRotacion } from "@/lib/services/rotacionService";
 import RotacionModal from "@/components/RotacionModal";
-import { 
-  filtrarCircuitosApagables, 
-  ordenarPorNombre,
-  filtrarPorBloque,
-  calcularTotalClientes 
-} from "@/lib/utils/circuitUtils";
-import { obtenerBloques } from "@/lib/utils/circuitUtils";
 
 export default function CircuitosPage() {
   const [circuitos, setCircuitos] = useState([]);
@@ -27,25 +20,59 @@ export default function CircuitosPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalCircuitos, setTotalCircuitos] = useState(0);
+  const [bloques, setBloques] = useState([]);
   const [modalRotacionAbierto, setModalRotacionAbierto] = useState(false);
   const [mensajeRotacion, setMensajeRotacion] = useState(null);
   
   const circuitosPorPagina = 10;
 
-  // CARGAR DATOS
+  // CARGAR BLOQUES (solo una vez)
+  useEffect(() => {
+    const cargarBloques = async () => {
+      try {
+        // Obtener todos los circuitos sin paginación para extraer bloques únicos
+        const response = await apiClient.circuitos.getAll(1, 1000);
+        const bq = [...new Set(response.results?.map(c => c.Bloque).filter(Boolean))].sort();
+        setBloques(bq);
+      } catch (err) {
+        console.error("Error cargando bloques:", err);
+      }
+    };
+    cargarBloques();
+  }, []);
+
+  // CARGAR DATOS CON FILTROS Y PAGINACIÓN
   useEffect(() => {
     cargarCircuitos();
-  }, []);
+  }, [pagina, soloApagables, bloqueSeleccionado]);
 
   const cargarCircuitos = async () => {
     try {
       setCargando(true);
       setError(null);
-      const datos = await apiClient.circuitos.getAll();
-      setCircuitos(Array.isArray(datos) ? datos : []);
+      const datos = await apiClient.circuitos.getAll(
+        pagina,
+        circuitosPorPagina,
+        soloApagables ? true : undefined,
+        bloqueSeleccionado ? bloqueSeleccionado : undefined
+      );
+      
+      if (datos && datos.results) {
+        setCircuitos(datos.results);
+        setTotalPaginas(datos.meta.totalPages);
+        setTotalCircuitos(datos.meta.total);
+      } else {
+        setCircuitos([]);
+        setTotalPaginas(1);
+        setTotalCircuitos(0);
+      }
     } catch (err) {
       setError("Error cargando circuitos: " + (err?.message || "Error desconocido"));
       setCircuitos([]);
+      setTotalPaginas(1);
+      setTotalCircuitos(0);
     } finally {
       setCargando(false);
     }
@@ -71,23 +98,6 @@ export default function CircuitosPage() {
     }
   };
 
-  // GENERAR ROTACIÓN DE CIRCUITOS
-  // FILTRAR DATOS
-  let circuitosFiltrados = [...circuitos];
-  if (soloApagables) {
-    circuitosFiltrados = filtrarCircuitosApagables(circuitosFiltrados);
-  }
-  if (bloqueSeleccionado) {
-    circuitosFiltrados = filtrarPorBloque(circuitosFiltrados, bloqueSeleccionado);
-  }
-  circuitosFiltrados = ordenarPorNombre(circuitosFiltrados);
-
-  // PAGINACIÓN
-  const totalPaginas = Math.ceil(circuitosFiltrados.length / circuitosPorPagina);
-  const inicio = (pagina - 1) * circuitosPorPagina;
-  const fin = inicio + circuitosPorPagina;
-  const circuitosPaginados = circuitosFiltrados.slice(inicio, fin);
-
   // EXPORTACIÓN
   const exportarAExcel = (datos, nombreArchivo) => {
     const datosFormateados = datos.map((item) => ({
@@ -107,9 +117,6 @@ export default function CircuitosPage() {
     XLSX.writeFile(libro, `${nombreArchivo}_${new Date().toISOString().split("T")[0]}.xlsx`);
   };
 
-  const totalClientes = calcularTotalClientes(circuitosFiltrados);
-  const bloques = obtenerBloques(circuitos);
-
   if (cargando) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -128,20 +135,20 @@ export default function CircuitosPage() {
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Gestión de Circuitos</h2>
           <p className="text-sm text-slate-500 mt-1">
-            {circuitosFiltrados.length} circuito(s) mostrado(s) · {totalClientes.toLocaleString()} clientes
+            {totalCircuitos} circuito(s) encontrado(s) · Página {pagina} de {totalPaginas}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setModalRotacionAbierto(true)}
-            disabled={circuitosFiltrados.length === 0}
+            disabled={circuitos.length === 0}
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-400 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
           >
             <Zap size={18} />
             Generar Rotación
           </button>
           <button
-            onClick={() => exportarAExcel(circuitosFiltrados, "Circuitos_Reporte")}
+            onClick={() => exportarAExcel(circuitos, "Circuitos_Reporte")}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
           >
             <FileSpreadsheet size={18} /> Exportar
@@ -232,8 +239,8 @@ export default function CircuitosPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {circuitosPaginados.length > 0 ? (
-                circuitosPaginados.map((circuito) => (
+              {circuitos.length > 0 ? (
+                circuitos.map((circuito) => (
                   <tr key={circuito.idCircuitoP} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-3 font-mono font-bold text-blue-600">
                       {circuito.idCircuitoP}
@@ -330,7 +337,7 @@ export default function CircuitosPage() {
       <RotacionModal
         isOpen={modalRotacionAbierto}
         onClose={() => setModalRotacionAbierto(false)}
-        circuitosDisponibles={circuitosFiltrados}
+        circuitosDisponibles={circuitos}
         onConfirmar={manejarConfirmarRotacion}
       />
     </div>

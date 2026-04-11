@@ -40,9 +40,42 @@ async function fetchWithFallback(url, options = {}) {
 
 // CIRCUITOS API
 const circuitos = {
-  getAll: async () => {
-    const data = await fetchWithFallback(`${API_BASE_URL}/circuitos`);
-    return data || circuitosMock;
+  getAll: async (page = 1, pageSize = 10, apagable = undefined, bloque = undefined) => {
+    let url = `${API_BASE_URL}/circuitos?page=${page}&pageSize=${pageSize}`;
+    
+    if (apagable !== undefined) {
+      url += `&apagable=${apagable}`;
+    }
+    
+    if (bloque !== undefined) {
+      url += `&bloque=${encodeURIComponent(bloque)}`;
+    }
+    
+    const data = await fetchWithFallback(url);
+    if (data) return data;
+    
+    // Fallback a mock con filtros aplicados
+    let filtered = [...circuitosMock];
+    if (apagable !== undefined) {
+      filtered = filtered.filter(c => c.Apagable === apagable);
+    }
+    if (bloque !== undefined) {
+      filtered = filtered.filter(c => c.Bloque === bloque);
+    }
+    
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const paginatedResults = filtered.slice(start, end);
+    
+    return {
+      results: paginatedResults,
+      meta: {
+        page,
+        totalPages: Math.ceil(filtered.length / pageSize),
+        total: filtered.length,
+        pageSize,
+      },
+    };
   },
 
   getApagables: async () => {

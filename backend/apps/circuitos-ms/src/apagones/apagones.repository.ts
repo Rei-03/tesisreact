@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import type { DbConnection } from "src/client-db/client-db.module";
+import type { DbConnection } from "../client-db/client-db.module";
 import * as sql from 'mssql'
 
 @Injectable()
@@ -10,6 +10,10 @@ export class ApagonesRepository {
      * Obtiene todos los apagones con paginación
      */
     async findAll(take = 20, skip = 0) {
+        const countResult = await this.db.request()
+            .query(`SELECT COUNT(*) as total FROM ap_apagon`);
+        const total = countResult.recordset[0].total;
+
         const result = await this.db.request()
             .input('take', sql.Int, take)
             .input('skip', sql.Int, skip)
@@ -18,13 +22,16 @@ export class ApagonesRepository {
                     SELECT idApagon, idProv, FechaRetiro, FechaCierre, idCircuitoP, 
                            MWAfectados, Observaciones, Id_Usuario, Id_UsuarioCerrado, AbiertoPor,
                            ROW_NUMBER() OVER (ORDER BY idApagon DESC) AS RowNum
-                    FROM ap_apagones
+                    FROM ap_apagon
                 ) AS ResultWithRows
                 WHERE RowNum > @skip AND RowNum <= (@skip + @take)
                 ORDER BY idApagon DESC
             `);
 
-        return result.recordset;
+        return {
+            records: result.recordset,
+            total: total
+        };
     }
 
     /**
@@ -36,7 +43,7 @@ export class ApagonesRepository {
             .query(`
                 SELECT idApagon, idProv, FechaRetiro, FechaCierre, idCircuitoP, 
                        MWAfectados, Observaciones, Id_Usuario, Id_UsuarioCerrado, AbiertoPor
-                FROM ap_apagones
+                FROM ap_apagon
                 WHERE idApagon = @idApagon
             `);
 
@@ -56,7 +63,7 @@ export class ApagonesRepository {
                     SELECT idApagon, idProv, FechaRetiro, FechaCierre, idCircuitoP, 
                            MWAfectados, Observaciones, Id_Usuario, Id_UsuarioCerrado, AbiertoPor,
                            ROW_NUMBER() OVER (ORDER BY idApagon DESC) AS RowNum
-                    FROM ap_apagones
+                    FROM ap_apagon
                     WHERE idCircuitoP = @idCircuitoP
                 ) AS ResultWithRows
                 WHERE RowNum > @skip AND RowNum <= (@skip + @take)
@@ -79,7 +86,7 @@ export class ApagonesRepository {
                     SELECT 
                         idCircuitoP,
                         MAX(idApagon) AS maxApagonId
-                    FROM ap_apagones
+                    FROM ap_apagon
                     WHERE idCircuitoP IS NOT NULL
                     GROUP BY idCircuitoP
                 )
@@ -96,7 +103,7 @@ export class ApagonesRepository {
                         ap.Id_UsuarioCerrado,
                         ap.AbiertoPor,
                         ROW_NUMBER() OVER (ORDER BY ap.idApagon DESC) AS RowNum
-                    FROM ap_apagones ap
+                    FROM ap_apagon ap
                     INNER JOIN LastApagones la ON ap.idCircuitoP = la.idCircuitoP 
                         AND ap.idApagon = la.maxApagonId
                 ) AS ResultWithRows
@@ -120,7 +127,7 @@ export class ApagonesRepository {
                     SELECT idApagon, idProv, FechaRetiro, FechaCierre, idCircuitoP, 
                            MWAfectados, Observaciones, Id_Usuario, Id_UsuarioCerrado, AbiertoPor,
                            ROW_NUMBER() OVER (ORDER BY idApagon DESC) AS RowNum
-                    FROM ap_apagones
+                    FROM ap_apagon
                     WHERE idProv = @idProv
                 ) AS ResultWithRows
                 WHERE RowNum > @skip AND RowNum <= (@skip + @take)
@@ -142,7 +149,7 @@ export class ApagonesRepository {
                     SELECT idApagon, idProv, FechaRetiro, FechaCierre, idCircuitoP, 
                            MWAfectados, Observaciones, Id_Usuario, Id_UsuarioCerrado, AbiertoPor,
                            ROW_NUMBER() OVER (ORDER BY FechaRetiro DESC) AS RowNum
-                    FROM ap_apagones
+                    FROM ap_apagon
                     WHERE FechaCierre IS NULL
                 ) AS ResultWithRows
                 WHERE RowNum > @skip AND RowNum <= (@skip + @take)
@@ -166,7 +173,7 @@ export class ApagonesRepository {
                     SELECT idApagon, idProv, FechaRetiro, FechaCierre, idCircuitoP, 
                            MWAfectados, Observaciones, Id_Usuario, Id_UsuarioCerrado, AbiertoPor,
                            ROW_NUMBER() OVER (ORDER BY FechaRetiro DESC) AS RowNum
-                    FROM ap_apagones
+                    FROM
                     WHERE FechaRetiro >= @fechaInicio AND FechaRetiro <= @fechaFin
                 ) AS ResultWithRows
                 WHERE RowNum > @skip AND RowNum <= (@skip + @take)
@@ -188,7 +195,7 @@ export class ApagonesRepository {
                     MAX(idApagon) as ultimoApagon,
                     CONVERT(DATE, MAX(FechaRetiro)) as ultimaFecha,
                     SUM(CAST(MWAfectados AS DECIMAL(18,2))) as totalMWAfectados
-                FROM ap_apagones
+                FROM ap_apagon
                 WHERE idCircuitoP IS NOT NULL
                 GROUP BY idCircuitoP
                 ORDER BY totalApagones DESC

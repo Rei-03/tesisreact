@@ -10,13 +10,9 @@ export type RedisClient = ReturnType<typeof createClient>;
       provide: 'REDIS_CLIENT',
       useFactory: async () => {
         const client = createClient({
-          socket: {
-            host: env.REDIS_HOST,
-            port: env.REDIS_PORT,
-          },
-        });
-
-        await client.connect();
+          host: env.REDIS_HOST,
+          port: env.REDIS_PORT,
+        } as any);
 
         client.on('error', (err) => {
           console.error('Redis Client Error', err);
@@ -25,6 +21,8 @@ export type RedisClient = ReturnType<typeof createClient>;
         client.on('connect', () => {
           console.log('Connected to Redis');
         });
+
+        await client.connect();
 
         return client;
       },

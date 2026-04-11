@@ -10,10 +10,24 @@ export class ApagonesService {
   /**
    * Obtiene todos los apagones con paginación
    */
-  findAll(payload: FindApagonesPaginationDto) {
-    const take = payload.take || 20;
-    const skip = payload.skip || 0;
-    return this.apagonesRepo.findAll(take, skip);
+  async findAll(payload: FindApagonesPaginationDto) {
+    const page = payload.page || 1;
+    const pageSize = payload.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
+    
+    const { records, total } = await this.apagonesRepo.findAll(take, skip);
+    const totalPages = Math.ceil(total / take);
+
+    return {
+      results: records,
+      meta: {
+        page,
+        totalPages,
+        total,
+        pageSize: take,
+      },
+    };
   }
 
   /**
@@ -27,8 +41,10 @@ export class ApagonesService {
    * Obtiene todos los apagones de un circuito específico
    */
   findByCircuitoId(idCircuitoP: number, payload: FindApagonesPaginationDto) {
-    const take = payload.take || 20;
-    const skip = payload.skip || 0;
+    const page = payload.page || 1;
+    const pageSize = payload.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
     return this.apagonesRepo.findByCircuitoId(idCircuitoP, take, skip);
   }
 
@@ -37,8 +53,10 @@ export class ApagonesService {
    * Perfecto para dashboards que muestren el estado más reciente
    */
   findLastApagonByCircuito(payload: FindApagonesPaginationDto) {
-    const take = payload.take || 20;
-    const skip = payload.skip || 0;
+    const page = payload.page || 1;
+    const pageSize = payload.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
     return this.apagonesRepo.findLastApagonByCircuito(take, skip);
   }
 
@@ -46,8 +64,10 @@ export class ApagonesService {
    * Obtiene apagones filtrados por provincia
    */
   findByProvincia(idProv: string, payload: FindApagonesPaginationDto) {
-    const take = payload.take || 20;
-    const skip = payload.skip || 0;
+    const page = payload.page || 1;
+    const pageSize = payload.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
     return this.apagonesRepo.findByProvincia(idProv, take, skip);
   }
 
@@ -55,8 +75,10 @@ export class ApagonesService {
    * Obtiene apagones que aún están abiertos (sin fecha de cierre)
    */
   findOpenApagones(payload: FindApagonesPaginationDto) {
-    const take = payload.take || 20;
-    const skip = payload.skip || 0;
+    const page = payload.page || 1;
+    const pageSize = payload.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
     return this.apagonesRepo.findOpenApagones(take, skip);
   }
 
@@ -64,8 +86,10 @@ export class ApagonesService {
    * Obtiene apagones dentro de un rango de fechas
    */
   findByDateRange(payload: FindApagonesByDateRangeDto) {
-    const take = payload.take || 20;
-    const skip = payload.skip || 0;
+    const page = payload.page || 1;
+    const pageSize = payload.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
     return this.apagonesRepo.findByDateRange(payload.fechaInicio, payload.fechaFin, take, skip);
   }
 

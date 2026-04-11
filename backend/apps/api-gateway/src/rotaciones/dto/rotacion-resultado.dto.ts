@@ -1,15 +1,24 @@
 /**
+ * Información de un circuito en la rotación
+ */
+export interface CircuitoRotacion {
+  id: number;
+  numero: string;
+  nombre: string;
+}
+
+/**
  * DTO que representa el resultado de una rotación
  */
 export class RotacionResultadoDto {
   /**
-   * IDs de circuitos a APAGAR (cola de rotación)
+   * Circuitos a APAGAR (cola de rotación)
    */
-  cola: number[];
+  cola: CircuitoRotacion[];
 
   /**
-   * IDs de circuitos a ENCENDER
+   * Circuitos a ENCENDER
    * Array vacío si soloApagar=true
    */
-  encendidos: number[];
+  encendidos: CircuitoRotacion[];
 }

@@ -8,7 +8,7 @@ export const envSchema = z.object({
     .default("nats://localhost:4222")
     .transform((val) => val.split(",")),
   // Database Configuration
-  DB_HOST: z.string().default("postgres"),
+  DB_HOST: z.string().default("localhost"),
   DB_PORT: z.coerce.number().min(1).max(65535).default(5432),
   DB_USERNAME: z.string().default("auth_user"),
   DB_PASSWORD: z.string().default("auth_password"),
@@ -16,7 +16,7 @@ export const envSchema = z.object({
   DB_SYNCHRONIZE: z.enum(["true", "false"]).default("true"),
   DB_LOGGING: z.enum(["true", "false"]).default("true"),
   // Redis Configuration
-  REDIS_HOST: z.string().default("redis"),
+  REDIS_HOST: z.string().default("localhost"),
   REDIS_PORT: z.coerce.number().min(1).max(65535).default(6379),
   // JWT Configuration
   JWT_SECRET: z.string().default("your-secret-key-change-in-production"),

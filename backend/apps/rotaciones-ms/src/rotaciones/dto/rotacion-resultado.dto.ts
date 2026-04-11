@@ -1,22 +1,28 @@
-import { ResultadoRotacion } from '../interfaces/circuito.interface';
+/**
+ * Información de un circuito en la rotación
+ */
+export interface CircuitoRotacion {
+  id: number;
+  numero: string;
+  nombre: string;
+}
 
 /**
  * DTO que representa el resultado del algoritmo de rotación de energía
  */
-export class RotacionResultadoDto implements ResultadoRotacion {
+export class RotacionResultadoDto {
   /**
-   * Lista de IDs de circuitos que están en cola de apagado
-   * (entrando o ya en estado apagado)
+   * Lista de objetos con información del circuito que está en cola de apagado
    */
-  cola: string[];
+  cola: CircuitoRotacion[];
 
   /**
-   * Lista de IDs de circuitos que deben ser encendidos ahora
+   * Lista de objetos con información del circuito que deben ser encendidos ahora
    */
-  encendidos: string[];
+  encendidos: CircuitoRotacion[];
 
-  constructor(resultado: ResultadoRotacion) {
-    this.cola = resultado.cola;
-    this.encendidos = resultado.encendidos;
+  constructor(cola: CircuitoRotacion[], encendidos: CircuitoRotacion[]) {
+    this.cola = cola;
+    this.encendidos = encendidos;
   }
 }

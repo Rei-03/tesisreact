@@ -11,6 +11,15 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @MessagePattern('auth.findAll')
+  async findAll(@Payload() payload: { page?: number; pageSize?: number }) {
+    const page = payload?.page || 1;
+    const pageSize = payload?.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
+    return this.authService.findAll(take, skip);
+  }
+
   @MessagePattern('auth.register')
   async register(@Payload() registerDto: RegisterDto) {
     return this.authService.register(registerDto);

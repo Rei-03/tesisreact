@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { env } from '../config/env';
+import { RedisModule } from '../redis/redis.module';
 
 const jwtSignOptions: JwtSignOptions = {
   expiresIn: env.JWT_EXPIRES_IN as any,
@@ -18,6 +19,7 @@ const jwtSignOptions: JwtSignOptions = {
       secret: env.JWT_SECRET,
       signOptions: jwtSignOptions,
     }),
+    RedisModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],

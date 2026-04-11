@@ -1,4 +1,4 @@
 export class FindApagonesPaginationDto {
-  take?: number;
-  skip?: number;
+  page?: number;
+  pageSize?: number;
 }

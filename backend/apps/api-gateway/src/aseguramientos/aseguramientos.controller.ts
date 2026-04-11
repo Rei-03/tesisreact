@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, Query } from '@nestjs/common';
 import { CreateAseguramientoDto } from './dto/create-aseguramiento.dto';
 import { UpdateAseguramientoDto } from './dto/update-aseguramiento.dto';
 import { ClientProxy } from '@nestjs/microservices';
@@ -16,8 +16,20 @@ export class AseguramientosController {
   }
 
   @Get()
-  findAll() {
-    return firstValueFrom(this.client.send('aseguramientos.findAll', {}));
+  findAll(
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('fecha') fecha?: string,
+  ) {
+    const pageNum = page ? Number(page) : 1;
+    const pageSizeNum = pageSize ? Number(pageSize) : 20;
+    return firstValueFrom(
+      this.client.send('aseguramientos.findAll', {
+        page: pageNum,
+        pageSize: pageSizeNum,
+        fecha,
+      })
+    );
   }
 
   @Get(':id')

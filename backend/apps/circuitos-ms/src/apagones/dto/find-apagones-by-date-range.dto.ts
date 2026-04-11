@@ -1,6 +1,6 @@
 export class FindApagonesByDateRangeDto {
-  fechaInicio: string;
-  fechaFin: string;
-  take?: number;
-  skip?: number;
+  fechaInicio!: string;
+  fechaFin!: string;
+  page?: number;
+  pageSize?: number;
 }

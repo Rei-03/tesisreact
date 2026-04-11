@@ -1,4 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -28,6 +29,7 @@ interface AuthTokens {
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     @Inject('REDIS_CLIENT') private readonly redisClient: RedisClient,
@@ -279,6 +281,31 @@ export class AuthService {
         data: null,
       };
     }
+  }
+
+  /**
+   * Obtiene lista paginada de usuarios
+   */
+  async findAll(take: number = 20, skip: number = 0) {
+    const [users, total] = await this.userRepository.findAndCount({
+      skip,
+      take,
+      order: { createdAt: 'DESC' },
+      select: ['id', 'email', 'name', 'role', 'isActive', 'createdAt'],
+    });
+
+    const totalPages = Math.ceil(total / take);
+    const page = skip / take + 1;
+
+    return {
+      results: users,
+      meta: {
+        page: Math.floor(page),
+        totalPages,
+        total,
+        pageSize: take,
+      },
+    };
   }
 
   /**

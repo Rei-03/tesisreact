@@ -6,5 +6,6 @@ import { AseguramientosRepository } from './aseguramientos.repository';
 @Module({
   controllers: [AseguramientosController],
   providers: [AseguramientosService, AseguramientosRepository],
+  exports: [AseguramientosRepository],
 })
 export class AseguramientosModule {}

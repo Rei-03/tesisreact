@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { RotacionesService } from './rotaciones.service';
 import { RotacionesController } from './rotaciones.controller';
 import { AseguramientosModule } from '../aseguramientos/aseguramientos.module';
+import { NatsModule } from '../nats/nats.module';
 
 @Module({
-  imports: [AseguramientosModule],
+  imports: [AseguramientosModule, NatsModule],
   controllers: [RotacionesController],
   providers: [RotacionesService],
 })

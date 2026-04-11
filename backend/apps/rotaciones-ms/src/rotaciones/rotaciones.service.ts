@@ -89,7 +89,24 @@ export class RotacionesService {
         `Rotación generada: ${resultado.cola.length} apagados, ${resultado.encendidos.length} encendidos${soloApagar ? ' (encendidos bloqueados)' : ''}`,
       );
 
-      return new RotacionResultadoDto(resultado);
+      // Enriquecer resultado con información de circuitos
+      const mapaCircuitos = new Map(
+        circuitos.map(c => [c.idCircuitoP.toString(), c])
+      );
+
+      const colaEnriquecida = resultado.cola.map(idStr => ({
+        id: Number(idStr),
+        numero: mapaCircuitos.get(idStr)?.idCircuitoP?.toString() || idStr,
+        nombre: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+      }));
+
+      const encendidosEnriquecidos = resultado.encendidos.map(idStr => ({
+        id: Number(idStr),
+        numero: mapaCircuitos.get(idStr)?.idCircuitoP?.toString() || idStr,
+        nombre: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+      }));
+
+      return new RotacionResultadoDto(colaEnriquecida, encendidosEnriquecidos);
     } catch (error) {
       this.logger.error(`Error generando rotación: ${error}`);
       throw error;
@@ -103,14 +120,13 @@ export class RotacionesService {
    */
   private async obtenerCircuitosConDatos(fecha: Date): Promise<any[]> {
     try {
-      const circuitos = await firstValueFrom(
+      const response = await firstValueFrom(
         this.natsClient.send('circuitos.findWithConsumptionAndApagones', {
           fecha: fecha.toISOString().split('T')[0],
-          take: 1000,
-          skip: 0,
         }),
       );
-      return circuitos || [];
+      // El endpoint retorna { results: [...], meta: {...} }
+      return response?.results || [];
     } catch (error) {
       this.logger.error('Error obteniendo circuitos desde circuitos-ms:', error);
       throw new BadRequestException(
@@ -124,16 +140,17 @@ export class RotacionesService {
    * @param fecha Fecha de referencia
    * @returns Array de aseguramientos
    */
-  private async obtenerAseguramientos(fecha: Date): Promise<any[]> {
+  private async obtenerAseguramientos(fecha: Date) {
     try {
       const hoy = new Date(fecha);
       hoy.setHours(0, 0, 0, 0);
 
-      const aseguramientos = await this.aseguramientosRepo.findMany({
-        select: { idCircuitoP: true },
+      const response = await this.aseguramientosRepo.findMany({
+        select: {},
         where: { fecha: hoy },
+        // Sin take/skip para obtener todos
       });
-      return aseguramientos || [];
+      return response.records || [];
     } catch (error) {
       this.logger.warn('Error obteniendo aseguramientos:', error);
       return []; // Si falla, asume que no hay protegidos
