@@ -1,19 +1,15 @@
 // app/aseguramientos/page.jsx
 "use client";
 import React, { useState, useEffect } from "react";
-import {
-  AlertCircle,
-  Edit,
-  Plus,
-  ShieldCheck,
-  Trash2,
-  X,
-  Calendar,
-  FileSpreadsheet,
-} from "lucide-react";
+import { AlertCircle, Calendar, FileSpreadsheet, ShieldCheck } from "lucide-react";
 import * as XLSX from "xlsx";
 import { apiClient } from "@/lib/api/apiClient";
 import { getToday, formatDateDisplay, formatDateTimeDisplay } from "@/lib/utils/dateUtils";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import AlertMessage from "@/components/shared/AlertMessage";
+import Pagination from "@/components/shared/Pagination";
+import AseguramientosForm from "@/components/aseguramientos/AseguramientosForm";
+import AseguramientosTable from "@/components/aseguramientos/AseguramientosTable";
 
 export default function AseguramientosPage() {
   // ESTADOS
@@ -161,18 +157,11 @@ export default function AseguramientosPage() {
   };
 
   if (cargando) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-slate-600">Cargando aseguramientos...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Cargando aseguramientos..." />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto space-y-8">
       {/* BANNER INFO */}
       <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg flex items-start gap-3">
         <AlertCircle className="text-blue-600 mt-1 shrink-0" size={20} />
@@ -185,12 +174,22 @@ export default function AseguramientosPage() {
         </div>
       </div>
 
-      {/* CABECERA */}
+      {/* Error Message */}
+      {error && (
+        <AlertMessage
+          type="error"
+          title="Error"
+          message={error}
+          onClose={() => setError(null)}
+        />
+      )}
+
+      {/* Cabecera y Controles */}
       <div className="flex justify-between items-start bg-white p-6 rounded-xl border shadow-sm">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Aseguramientos Activos</h2>
           <p className="text-sm text-slate-500 mt-1">
-            {aseguramientosActivos.length} aseguramiento(s) activo(s) ·{" "}
+            {aseguramientosActivos.length} aseguramiento(s) activo(s) · 
             <span className="font-bold text-blue-600">{totalMW.toFixed(2)} MW</span> protegido(s)
           </p>
         </div>
@@ -205,12 +204,12 @@ export default function AseguramientosPage() {
             onClick={() => setMostrarFormulario(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
           >
-            <Plus size={18} /> Nuevo
+            Nuevo
           </button>
         </div>
       </div>
 
-      {/* SELECTOR DE FECHA */}
+      {/* Selector de Fecha */}
       <div className="bg-white p-4 rounded-xl border shadow-sm">
         <label className="flex items-center gap-3">
           <Calendar size={20} className="text-slate-600" />
@@ -231,96 +230,22 @@ export default function AseguramientosPage() {
         </label>
       </div>
 
-      {/* TABLA */}
-      <div className="bg-white rounded-xl shadow-md border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-800 text-white">
-              <tr>
-                <th className="px-6 py-3 font-semibold">Circuito</th>
-                <th className="px-6 py-3 font-semibold">Fecha Inicial</th>
-                <th className="px-6 py-3 font-semibold">Fecha Final</th>
-                <th className="px-6 py-3 font-semibold text-center">MW</th>
-                <th className="px-6 py-3 font-semibold">Tipo</th>
-                <th className="px-6 py-3 font-semibold">Observaciones</th>
-                <th className="px-6 py-3 font-semibold text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {aseguramientosPaginados.length > 0 ? (
-                aseguramientosPaginados.map((asg, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-3 font-bold text-blue-600">
-                      {asg.CircuitoP}
-                    </td>
-                    <td className="px-6 py-3 font-mono text-slate-600">
-                      {formatDateDisplay(asg.fechaInicial)}
-                    </td>
-                    <td className="px-6 py-3 font-mono text-slate-600">
-                      {formatDateDisplay(asg.fechaFinal)}
-                    </td>
-                    <td className="px-6 py-3 text-center font-bold">
-                      {asg.mw ? `${asg.mw.toFixed(1)} MW` : "—"}
-                    </td>
-                    <td className="px-6 py-3">
-                      <span className="inline-block bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">
-                        {asg.tipo}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-slate-600 text-xs">
-                      {asg.Observaciones}
-                    </td>
-                    <td className="px-6 py-3 text-center">
-                      <button className="text-slate-400 hover:text-red-600 transition-colors">
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                    No hay aseguramientos activos para esta fecha
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Tabla */}
+      <AseguramientosTable
+        aseguramientos={aseguramientosPaginados}
+        onDelete={() => {}} // Implementar cuando sea necesario
+      />
 
-      {/* PAGINACIÓN */}
+      {/* Paginación */}
       {totalPaginas > 1 && (
-        <div className="flex justify-center items-center gap-2">
-          <button
-            onClick={() => setPagina(Math.max(1, pagina - 1))}
-            disabled={pagina === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-          >
-            ←
-          </button>
-          {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPagina(p)}
-              className={`px-3 py-1 rounded font-medium ${
-                pagina === p ? "bg-blue-600 text-white" : "border hover:bg-slate-50"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-          <button
-            onClick={() => setPagina(Math.min(totalPaginas, pagina + 1))}
-            disabled={pagina === totalPaginas}
-            className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-          >
-            →
-          </button>
-        </div>
+        <Pagination
+          currentPage={pagina}
+          totalPages={totalPaginas}
+          onPageChange={setPagina}
+        />
       )}
 
-      {/* MODAL FORMULARIO */}
+      {/* Modal Formulario */}
       {mostrarFormulario && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border">
@@ -335,27 +260,26 @@ export default function AseguramientosPage() {
                 }}
                 className="text-slate-400 hover:text-slate-600"
               >
-                <X size={24} />
+                ✕
               </button>
             </div>
 
             <form onSubmit={handleSubmitForm} className="p-6 space-y-4">
               {errorForm && (
-                <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg text-sm">
-                  {errorForm}
-                </div>
+                <AlertMessage
+                  type="error"
+                  title="Error"
+                  message={errorForm}
+                />
               )}
 
-              {/* Circuito */}
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
                   Circuito Asegurado
                 </label>
                 <select
                   value={formData.id_CircuitoP}
-                  onChange={(e) =>
-                    setFormData({ ...formData, id_CircuitoP: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, id_CircuitoP: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">Selecciona un circuito apagable...</option>
@@ -367,63 +291,43 @@ export default function AseguramientosPage() {
                 </select>
               </div>
 
-              {/* Fecha Inicial */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Fecha Inicial
-                </label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Fecha Inicial</label>
                 <input
                   type="date"
                   value={formData.fechaInicial}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fechaInicial: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, fechaInicial: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
-              {/* Fecha Final */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Fecha Final
-                </label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Fecha Final</label>
                 <input
                   type="date"
                   value={formData.fechaFinal}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fechaFinal: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, fechaFinal: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
-              {/* MW */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  MW (opcional)
-                </label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">MW (opcional)</label>
                 <input
                   type="number"
                   step="0.1"
                   value={formData.mw}
-                  onChange={(e) =>
-                    setFormData({ ...formData, mw: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, mw: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   placeholder="Ej: 45.5"
                 />
               </div>
 
-              {/* Tipo */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Tipo
-                </label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Tipo</label>
                 <select
                   value={formData.tipo}
-                  onChange={(e) =>
-                    setFormData({ ...formData, tipo: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option>Programado</option>
@@ -432,26 +336,17 @@ export default function AseguramientosPage() {
                 </select>
               </div>
 
-              {/* Observaciones */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Observaciones
-                </label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Observaciones</label>
                 <textarea
                   value={formData.Observaciones}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      Observaciones: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setFormData({ ...formData, Observaciones: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
                   rows={3}
                   placeholder="Motivo del aseguramiento..."
                 />
               </div>
 
-              {/* Botones */}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -474,66 +369,6 @@ export default function AseguramientosPage() {
           </div>
         </div>
       )}
-
-      {/* Tabla de Aseguramientos */}
-      <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-            <tr>
-              <th className="p-4 font-semibold">Circuito / Nro</th>
-              <th className="p-4 font-semibold">Carga (MW)</th>
-              <th className="p-4 font-semibold">Motivo de Protección</th>
-              <th className="p-4 font-semibold">Tipo / Horario</th>
-              <th className="p-4 font-semibold text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {aseguramientosPaginados.map((item, idx) => (
-              <tr key={`${item.id_CircuitoP}-${idx}`} className="hover:bg-slate-50 transition-colors">
-                <td className="p-4">
-                  <div className="font-bold text-slate-700">
-                    {item.circuito}
-                  </div>
-                  <div className="text-xs text-slate-400">ID: {item.nro}</div>
-                </td>
-                <td className="p-4 font-semibold text-slate-600">
-                  {item.mw} MW
-                </td>
-                <td className="p-4 text-slate-600">
-                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
-                    {item.motivo}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <span
-                    className={`text-sm ${
-                      item.tipo === "Permanente"
-                        ? "text-red-600 font-medium"
-                        : "text-slate-500"
-                    }`}
-                  >
-                    {item.tipo}
-                  </span>
-                </td>
-                <td className="p-4 text-right space-x-2">
-                  <button
-                    className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
-                    title="Editar"
-                  >
-                    <Edit size={18} />
-                  </button>
-                  <button
-                    className="p-2 text-slate-400 hover:text-red-600 transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
