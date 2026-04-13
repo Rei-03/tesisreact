@@ -9,11 +9,6 @@ import * as XLSX from "xlsx";
 import { apiClient } from "@/lib/api/apiClient";
 import { generarRotacion } from "@/lib/services/rotacionService";
 import RotacionModal from "@/components/RotacionModal";
-import { 
-  filtrarCircuitosApagables, 
-  ordenarPorNombre,
-  filtrarPorBloque,
-} from "@/lib/utils/circuitUtils";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import AlertMessage from "@/components/shared/AlertMessage";
 import Pagination from "@/components/shared/Pagination";
@@ -29,28 +24,13 @@ export default function CircuitosPage() {
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalCircuitos, setTotalCircuitos] = useState(0);
-  const [bloques, setBloques] = useState([]);
   const [modalRotacionAbierto, setModalRotacionAbierto] = useState(false);
   const [mensajeRotacion, setMensajeRotacion] = useState(null);
   
   const circuitosPorPagina = 10;
 
-  // CARGAR BLOQUES (solo una vez)
-  useEffect(() => {
-    const cargarBloques = async () => {
-      try {
-        // Obtener todos los circuitos sin paginación para extraer bloques únicos
-        const response = await apiClient.circuitos.getAll(1, 1000);
-        const bq = [...new Set(response.results?.map(c => c.Bloque).filter(Boolean))].sort();
-        setBloques(bq);
-      } catch (err) {
-        console.error("Error cargando bloques:", err);
-      }
-    };
-    cargarBloques();
-  }, []);
-
   // CARGAR DATOS CON FILTROS Y PAGINACIÓN
+  // Se ejecuta cuando cambian: pagina, soloApagables o bloqueSeleccionado
   useEffect(() => {
     cargarCircuitos();
   }, [pagina, soloApagables, bloqueSeleccionado]);
@@ -59,14 +39,16 @@ export default function CircuitosPage() {
     try {
       setCargando(true);
       setError(null);
+      
+      // Delegar filtrado y paginación al backend
       const datos = await apiClient.circuitos.getAll(
         pagina,
         circuitosPorPagina,
         soloApagables ? true : undefined,
-        bloqueSeleccionado ? bloqueSeleccionado : undefined
+        bloqueSeleccionado || undefined
       );
       
-      if (datos && datos.results) {
+      if (datos?.results) {
         setCircuitos(datos.results);
         setTotalPaginas(datos.meta.totalPages);
         setTotalCircuitos(datos.meta.total);
@@ -76,7 +58,8 @@ export default function CircuitosPage() {
         setTotalCircuitos(0);
       }
     } catch (err) {
-      setError("Error cargando circuitos: " + (err?.message || "Error desconocido"));
+      const mensajeError = err?.message || "Error desconocido";
+      setError(`Error cargando circuitos: ${mensajeError}`);
       setCircuitos([]);
       setTotalPaginas(1);
       setTotalCircuitos(0);
@@ -135,7 +118,7 @@ export default function CircuitosPage() {
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Gestión de Circuitos</h2>
           <p className="text-sm text-slate-500 mt-1">
-            {circuitosFiltrados.length} circuito(s) mostrado(s) · {circuitosFiltrados.reduce((sum, c) => sum + (c.Clientes || 0), 0).toLocaleString()} clientes
+            {circuitos.length} circuito(s) mostrado(s) · {totalCircuitos.toLocaleString()} total
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -182,19 +165,18 @@ export default function CircuitosPage() {
         soloApagables={soloApagables}
         setSoloApagables={(value) => {
           setSoloApagables(value);
-          setPagina(1);
+          setPagina(1); // Resetear a primera página
         }}
         bloqueSeleccionado={bloqueSeleccionado}
         setBloqueSeleccionado={(value) => {
           setBloqueSeleccionado(value);
-          setPagina(1);
+          setPagina(1); // Resetear a primera página
         }}
-        circuitos={circuitos}
       />
 
       {/* TABLA */}
       <CircuitosTable
-        circuitos={circuitosPaginados}
+        circuitos={circuitos}
         onSelectCircuito={(circuito) => console.log("Seleccionado:", circuito)}
       />
 

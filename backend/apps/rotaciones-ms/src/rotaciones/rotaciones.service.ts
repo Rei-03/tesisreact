@@ -24,15 +24,15 @@ export class RotacionesService {
    * 1. Obtiene circuitos con consumos desde circuitos-ms
    * 2. Obtiene aseguramientos para identificar protegidos
    * 3. Enriquece circuitos con estado y timestamps
-   * 4. Ejecuta algoritmo considerando soloApagar
-   * 5. Retorna qué apagar y qué encender
+   * 4. Ejecuta algoritmo considerando circuitosAEncender
+   * 5. Retorna qué apagar y qué encender (con acciones)
    * 
    * IMPORTANTE: Si enciendes circuitos, su consumo se suma al déficit
    * (porque van a consumir potencia)
    * Ejemplo: déficit 50 + encender 30 MW = necesita apagar 80 MW total
    * 
-   * @param createRotacioneDto Solo contiene deficitX, fecha, soloApagar
-   * @returns Resultado con cola nueva e IDs a encender (vacío si soloApagar)
+   * @param createRotacioneDto Contiene deficitX, fecha, circuitosAEncender
+   * @returns Resultado con cola nueva e IDs a encender (vacío si circuitosAEncender=0)
    */
   async generate(
     createRotacioneDto: CreateRotacioneDto,
@@ -43,10 +43,10 @@ export class RotacionesService {
     }
 
     const fecha = createRotacioneDto.fecha || new Date();
-    const soloApagar = createRotacioneDto.soloApagar ?? false;
+    const circuitosAEncender = createRotacioneDto.circuitosAEncender ?? 0;
 
     this.logger.debug(
-      `Generando rotación para fecha ${fecha}, déficit ${createRotacioneDto.deficitX} MW${soloApagar ? ' (solo apagar)' : ''}`,
+      `Generando rotación para fecha ${fecha}, déficit ${createRotacioneDto.deficitX} MW, encender ${circuitosAEncender} circuitos`,
     );
 
     try {
@@ -77,36 +77,64 @@ export class RotacionesService {
 
       this.logger.debug(`Circuitos aptos: ${circuitosAptos.length}`);
 
-      // Ejecutar algoritmo con parámetro soloApagar
+      // Ejecutar algoritmo con cantidad de circuitos a encender
       const resultado: ResultadoRotacion = RotacionAlgoritmo.ejecutar(
         circuitosAptos,
         createRotacioneDto.deficitX,
-        soloApagar, // ← Nuevo parámetro
+        circuitosAEncender > 0, // Solo encender si circuitosAEncender > 0
         [], // Cola VACÍA: siempre crea nueva
+        circuitosAEncender,
       );
 
       this.logger.debug(
-        `Rotación generada: ${resultado.cola.length} apagados, ${resultado.encendidos.length} encendidos${soloApagar ? ' (encendidos bloqueados)' : ''}`,
+        `Rotación generada: ${resultado.apagados.length} apagados, ${resultado.encendidos.length} encendidos`,
       );
 
-      // Enriquecer resultado con información de circuitos
+      // Enriquecer resultado con información de circuitos e incluir acciones
       const mapaCircuitos = new Map(
         circuitos.map(c => [c.idCircuitoP.toString(), c])
       );
 
-      const colaEnriquecida = resultado.cola.map(idStr => ({
+      // Obtener lista de circuitos originalmente apagados
+      const apagadosOriginales = new Set(
+        circuitosAptos
+          .filter(c => c.estado === 'apagado')
+          .map(c => c.idCircuitoP.toString())
+      );
+
+      // Calcular mantenidos: apagados originales - (nuevos apagados + encendidos)
+      const apagadosSet = new Set(resultado.apagados);
+      const encendidosSet = new Set(resultado.encendidos);
+      const mantenidos = Array.from(apagadosOriginales).filter(
+        id => !apagadosSet.has(id) && !encendidosSet.has(id)
+      );
+
+      // Enriquecer cada lista con información completa
+      const apagadosEnriquecidos = resultado.apagados.map((idStr) => ({
         id: Number(idStr),
         numero: mapaCircuitos.get(idStr)?.idCircuitoP?.toString() || idStr,
         nombre: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        accion: 'apagado' as const,
       }));
 
-      const encendidosEnriquecidos = resultado.encendidos.map(idStr => ({
+      const mantenidosEnriquecidos = mantenidos.map((idStr) => ({
         id: Number(idStr),
         numero: mapaCircuitos.get(idStr)?.idCircuitoP?.toString() || idStr,
         nombre: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        accion: 'mantenido' as const,
       }));
 
-      return new RotacionResultadoDto(colaEnriquecida, encendidosEnriquecidos);
+      const encendidosEnriquecidos = resultado.encendidos.map((idStr) => ({
+        id: Number(idStr),
+        numero: mapaCircuitos.get(idStr)?.idCircuitoP?.toString() || idStr,
+        nombre: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        accion: 'encendido' as const,
+      }));
+
+      // Combinar apagados + mantenidos para la cola (datos de apagón)
+      const colaCompleta = [...apagadosEnriquecidos, ...mantenidosEnriquecidos];
+
+      return new RotacionResultadoDto(colaCompleta, encendidosEnriquecidos);
     } catch (error) {
       this.logger.error(`Error generando rotación: ${error}`);
       throw error;
@@ -123,6 +151,8 @@ export class RotacionesService {
       const response = await firstValueFrom(
         this.natsClient.send('circuitos.findWithConsumptionAndApagones', {
           fecha: fecha.toISOString().split('T')[0],
+          take: 10000, // Obtener todos los circuitos (sin límite práctico)
+          skip: 0,
         }),
       );
       // El endpoint retorna { results: [...], meta: {...} }

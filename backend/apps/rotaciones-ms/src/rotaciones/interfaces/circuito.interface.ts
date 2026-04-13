@@ -40,8 +40,9 @@ export interface Circuito {
  * Resultado del algoritmo de rotación de energía
  */
 export interface ResultadoRotacion {
-  cola: string[]; // IDs de circuitos apagados (o entrando en apagón)
-  encendidos: string[]; // IDs de circuitos a encender
+  apagados: string[]; // IDs de circuitos que se apagan AHORA (estado=encendido → apagado)
+  mantenidos: string[]; // IDs de circuitos ya apagados que se mantienen en lista
+  encendidos: string[]; // IDs de circuitos a encender (estado=apagado → encendido)
 }
 
 /**

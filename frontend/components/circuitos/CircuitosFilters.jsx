@@ -1,14 +1,16 @@
-import { Filter, ChevronDown } from "lucide-react";
-import { obtenerBloques } from "@/lib/utils/circuitUtils";
+import { Filter } from "lucide-react";
 
 export default function CircuitosFilters({ 
   soloApagables, 
   setSoloApagables, 
   bloqueSeleccionado, 
-  setBloqueSeleccionado,
-  circuitos 
+  setBloqueSeleccionado
 }) {
-  const bloques = obtenerBloques(circuitos);
+  const handleBloqueChange = (e) => {
+    const value = e.target.value;
+    // Convertir a número o null si está vacío
+    setBloqueSeleccionado(value ? Number(value) : null);
+  };
 
   return (
     <div className="bg-white p-4 rounded-xl shadow-sm border flex flex-wrap gap-4 items-center">
@@ -28,21 +30,21 @@ export default function CircuitosFilters({
         <span className="text-sm text-slate-700">Solo Apagables</span>
       </label>
 
-      {/* Select: Bloque */}
-      <div className="relative">
-        <select
+      {/* Input: Bloque (número positivo) */}
+      <div className="flex items-center gap-2">
+        <label htmlFor="bloque-input" className="text-sm text-slate-700 font-medium">
+          Bloque:
+        </label>
+        <input
+          id="bloque-input"
+          type="number"
+          min="1"
+          step="1"
           value={bloqueSeleccionado || ""}
-          onChange={(e) => setBloqueSeleccionado(e.target.value || null)}
-          className="pl-3 pr-8 py-2 border rounded-lg text-sm bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500 outline-none"
-        >
-          <option value="">Todos los Bloques</option>
-          {bloques.map((bloque) => (
-            <option key={bloque} value={bloque}>
-              Bloque {bloque}
-            </option>
-          ))}
-        </select>
-        <ChevronDown size={16} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          onChange={handleBloqueChange}
+          placeholder="Todos"
+          className="w-24 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+        />
       </div>
     </div>
   );

@@ -5,6 +5,13 @@ export interface CircuitoRotacion {
   id: number;
   numero: string;
   nombre: string;
+  /**
+   * Acción realizada con el circuito
+   * - "apagado": Se apagó ahora como parte de la rotación (estado anterior: encendido)
+   * - "mantenido": Ya estaba apagado y se mantiene en la lista (no se modificó su estado)
+   * - "encendido": Se enciende ahora como parte de la rotación (estado anterior: apagado)
+   */
+  accion?: 'apagado' | 'mantenido' | 'encendido';
 }
 
 /**

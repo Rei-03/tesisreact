@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -6,6 +6,7 @@ import { NatsModule } from './nats/nats.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { User } from './auth/entities/user.entity';
+import { UserSeeder } from './auth/seeders/user.seeder';
 import { env } from './config/env';
 
 @Module({
@@ -22,11 +23,18 @@ import { env } from './config/env';
       synchronize: env.DB_SYNCHRONIZE === 'true',
       logging: env.DB_LOGGING === 'true',
     }),
+    TypeOrmModule.forFeature([User]),
     NatsModule,
     RedisModule,
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, UserSeeder],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  constructor(private readonly userSeeder: UserSeeder) {}
+
+  async onModuleInit() {
+    await this.userSeeder.seed();
+  }
+}

@@ -21,12 +21,13 @@ export class CreateRotacioneDto {
   fecha?: Date;
 
   /**
-   * Si es true: solo apaga circuitos para cubrir el déficit
-   * Si es false (default): también enciende circuitos FIFO
+   * Cantidad de circuitos a encender
+   * Si es 0 (default): solo apaga, no enciende nada
+   * Si es > 0: enciende esa cantidad de circuitos FIFO
    * 
    * IMPORTANTE: Si enciendes circuitos, su consumo se suma al déficit
    * Ejemplo: déficit 50 MW + encender 2 circuitos (30 MW total)
    *          → déficit efectivo = 80 MW (necesita apagar más)
    */
-  soloApagar?: boolean;
+  circuitosAEncender?: number;
 }

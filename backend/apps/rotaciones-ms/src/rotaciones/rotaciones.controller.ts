@@ -37,7 +37,7 @@ export class RotacionesController {
   ): Promise<any> {
     try {
       this.logger.log(
-        `Rotación solicitada: déficit ${createRotacioneDto.deficitX} MW${createRotacioneDto.soloApagar ? ' (solo apagar)' : ''}`,
+        `Rotación solicitada: déficit ${createRotacioneDto.deficitX} MW${createRotacioneDto.circuitosAEncender ?? 0 > 0 ? ' (solo apagar)' : ''}`,
       );
 
       const resultado: RotacionResultadoDto =
