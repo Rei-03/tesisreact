@@ -1,0 +1,167 @@
+services:
+  # ===== SERVICIOS DE INFRAESTRUCTURA =====
+  nats:
+    image: nats:latest
+    container_name: nats-server
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    environment:
+      - NATS_PORT=4222
+    volumes:
+      - nats-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres-auth
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+      POSTGRES_DB: auth_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ===== MICROSERVICIOS =====
+  auth-ms:
+    build:
+      context: ./
+      dockerfile: ./apps/auth-ms/Dockerfile
+    container_name: auth-ms
+    environment:
+      NODE_ENV: production
+      NATS_URL: nats://nats-server:4222
+      DATABASE_URL: postgresql://auth_user:auth_password@postgres-auth:5432/auth_db
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-prod}
+      REDIS_URL: redis://redis-cache:6379
+    ports:
+      - "3001:3001"
+    networks:
+      - app-network
+    depends_on:
+      nats:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  circuitos-ms:
+    build:
+      context: ./
+      dockerfile: ./apps/circuitos-ms/Dockerfile
+    container_name: circuitos-ms
+    environment:
+      NODE_ENV: production
+      NATS_URL: nats://nats-server:4222
+      DATABASE_URL: postgresql://auth_user:auth_password@postgres-auth:5432/auth_db
+      REDIS_URL: redis://redis-cache:6379
+      DB_SERVER_CIRCUITOS: ${DB_SERVER_CIRCUITOS:-host.docker.internal}
+      DB_USER_CIRCUITOS: ${DB_USER_CIRCUITOS:-sa}
+      DB_PASSWORD_CIRCUITOS: ${DB_PASSWORD_CIRCUITOS:-12341234}
+      DB_NAME_CIRCUITOS: ${DB_NAME_CIRCUITOS:-SIGERE}
+    ports:
+      - "3002:3002"
+    networks:
+      - app-network
+    depends_on:
+      nats:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rotaciones-ms:
+    build:
+      context: ./
+      dockerfile: ./apps/rotaciones-ms/Dockerfile
+    container_name: rotaciones-ms
+    environment:
+      NODE_ENV: production
+      NATS_URL: nats://nats-server:4222
+      DATABASE_URL: postgresql://auth_user:auth_password@postgres-auth:5432/auth_db
+      REDIS_URL: redis://redis-cache:6379
+      DB_SERVER_ROTACIONES: ${DB_SERVER_ROTACIONES:-host.docker.internal}
+      DB_USER_ROTACIONES: ${DB_USER_ROTACIONES:-sa}
+      DB_PASSWORD_ROTACIONES: ${DB_PASSWORD_ROTACIONES:-12341234}
+      DB_NAME_ROTACIONES: ${DB_NAME_ROTACIONES:-PSFV}
+    ports:
+      - "3003:3003"
+    networks:
+      - app-network
+    depends_on:
+      nats:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./
+      dockerfile: ./apps/api-gateway/Dockerfile
+    container_name: api-gateway
+    environment:
+      NODE_ENV: production
+      NATS_URL: nats://nats-server:4222
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-prod}
+      REDIS_URL: redis://redis-cache:6379
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    depends_on:
+      auth-ms:
+        condition: service_started
+      circuitos-ms:
+        condition: service_started
+      rotaciones-ms:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  nats-data:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

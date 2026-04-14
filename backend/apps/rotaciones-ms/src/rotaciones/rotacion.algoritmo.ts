@@ -54,101 +54,114 @@ export class RotacionAlgoritmo {
 
 
   /**
-   * Algoritmo principal de rotación de energía (MODIFICADO)
+   * Algoritmo principal de rotación de energía (v5)
    * 
-   * Nueva Lógica:
-   * 1. PRIMERO: Quitar de apagados `circuitosAEncender` circuitos (los que llevan más tiempo apagado)
-   *    - Marcarlos como "encendidos"
-   * 2. SEGUNDO: Considerar el resto de apagados
-   *    - Si consumo de encendidos >= déficit: Marcar también para encender el resto que llevan más tiempo apagado
-   * 3. TERCERO: Si no se cumple déficit con apagados
-   *    - Apagar los circuitos que llevan más tiempo encendidos hasta cumplir el déficit
+   * Lógica:
+   * 1. Separar circuitos a encender obligatorios (si hay)
+   * 
+   * 2. Con apagados restantes, sumar consumo hasta cumplir deficitX:
+   *    - Circuitos sumados hasta cumplir → MANTENIDOS
+   *    - Resto que sobran → AENCENDER
+   * 
+   * 3. Si consumo total de apagados < déficit:
+   *    - Sumar encendidos (ordenados por mayor tiempo encendido) hasta cubrir déficit
+   *    - Los necesarios → AAPAGAR
+   *    - El resto se mantiene encendido
+   *    - Los apagados sobrantes NO se encienden
    * 
    * @param circuitos Circuitos disponibles (ya filtrados sin protegidos)
    * @param deficitX Déficit de potencia a cubrir en MW
-   * @param debeEncender Si true, puede encender circuitos
-   * @param colaActual Cola actual de apagados (no se usa actualmente)
-   * @param circuitosAEncender Cantidad de circuitos a encender solicitados
-   * @returns Resultado con IDs de apagados, encendidos y placeholder para mantenidos
+   * @param circuitosAEncender Cantidad de circuitos a encender obligatoriamente
+   * @returns Resultado con IDs de apagados, encendidos, mantenidos
    */
   public static ejecutar(
     circuitos: Circuito[],
     deficitX: number,
-    debeEncender: boolean = false,
-    colaActual: string[] = [],
     circuitosAEncender: number = 0,
   ): ResultadoRotacion {
-    // Validaciones iniciales
     if (!Array.isArray(circuitos) || circuitos.length === 0) {
-      return { apagados: [], encendidos: [] };
+      return { apagados: [], encendidos: [], mantenidos: [] };
     }
 
     if (deficitX < 0) {
       throw new Error('El déficit de potencia no puede ser negativo');
     }
 
-    // Enriquecer circuitos con tiempos calculados
     const circuitosEnriquecidos = this.enriquecerCircuitos(circuitos);
 
-    // Separar circuitos por estado
     const apagados = circuitosEnriquecidos.filter((c) => c.estado === 'apagado');
     const encendidosDisponibles = circuitosEnriquecidos.filter(
       (c) => c.estado === 'encendido',
     );
 
-    let aEncender: CircuitoConPeso[] = [];
-    let aApagar: CircuitoConPeso[] = [];
+    // Paso 1: Separar obligatorios a encender
+    let aEncenderObligatorios: CircuitoConPeso[] = [];
+    let apagadosRestantes: CircuitoConPeso[] = apagados;
 
-    // Fase 1: Si debeEncender, quitar primero `circuitosAEncender` de apagados (los que llevan más tiempo apagado)
-    if (debeEncender && circuitosAEncender > 0) {
-      // Ordenar apagados por tiempo apagado DESCENDENTE (más tiempo = primero)
+    if (circuitosAEncender > 0) {
       const apagadosOrdenados = apagados.sort(
         (a, b) => b.tiempoApagadoMinutos - a.tiempoApagadoMinutos,
       );
+      aEncenderObligatorios = apagadosOrdenados.slice(0, circuitosAEncender);
+      apagadosRestantes = apagadosOrdenados.slice(circuitosAEncender);
+    }
 
-      // Tomar los primeros `circuitosAEncender` para encender
-      const primerosAEncender = apagadosOrdenados.slice(0, circuitosAEncender);
-      const restoApagados = apagadosOrdenados.slice(circuitosAEncender);
+    // Paso 2: Sumar apagados restantes hasta cumplir déficit
+    let mantenidos: CircuitoConPeso[] = [];
+    let aEncenderAdicionales: CircuitoConPeso[] = [];
+    let consumoAcumulado = 0;
+    let indiceCumplimiento = -1;
 
-      aEncender = primerosAEncender;
-      const consumoEncendidos = aEncender.reduce((sum, c) => sum + c.consumo.mw, 0);
+    for (let i = 0; i < apagadosRestantes.length; i++) {
+      const circuito = apagadosRestantes[i];
+      mantenidos.push(circuito);
+      consumoAcumulado += circuito.consumo.mw;
 
-      // Fase 2: Si consumo de encendidos >= déficit, encender el resto de apagados también
-      if (consumoEncendidos >= deficitX) {
-        // Ordenar resto por tiempo apagado DESCENDENTE
-        const restoOrdenado = restoApagados.sort(
-          (a, b) => b.tiempoApagadoMinutos - a.tiempoApagadoMinutos,
-        );
-        aEncender = [...aEncender, ...restoOrdenado];
-      } else {
-        // Fase 3: Si no se cumple déficit, apagar circuitos que llevan más tiempo encendidos
-        const deficitFaltante = deficitX - consumoEncendidos;
-
-        // Ordenar encendidos por tiempo encendido DESCENDENTE (más tiempo = primero)
-        const encendidosOrdenados = encendidosDisponibles.sort(
-          (a, b) => b.tiempoEncendidoMinutos - a.tiempoEncendidoMinutos,
-        );
-
-        // Seleccionar secuencialmente hasta cubrir déficit faltante
-        let consumoAcumulado = 0;
-        aApagar = encendidosOrdenados.filter((c) => {
-          if (consumoAcumulado >= deficitFaltante) {
-            return false; // Ya cubrimos el déficit
-          }
-          consumoAcumulado += c.consumo.mw;
-          return true;
-        });
+      // Registrar en qué índice se cumple el déficit
+      if (consumoAcumulado >= deficitX && indiceCumplimiento === -1) {
+        indiceCumplimiento = i;
       }
     }
 
-    // Extraer IDs
+    // Si cubrimos el déficit con apagados, el resto se enciende
+    if (indiceCumplimiento !== -1) {
+      aEncenderAdicionales = apagadosRestantes.slice(indiceCumplimiento + 1);
+      mantenidos = apagadosRestantes.slice(0, indiceCumplimiento + 1);
+    }
+
+    // Paso 3: Si no cubrimos con apagados, apagar encendidos
+    let aApagar: CircuitoConPeso[] = [];
+    if (consumoAcumulado < deficitX) {
+      const deficitPendiente = deficitX - consumoAcumulado;
+      const encendidosOrdenados = encendidosDisponibles.sort(
+        (a, b) => b.tiempoEncendidoMinutos - a.tiempoEncendidoMinutos,
+      );
+
+      let consumoEncendidos = 0;
+      for (const circuito of encendidosOrdenados) {
+        if (consumoEncendidos >= deficitPendiente) {
+          break;
+        }
+        aApagar.push(circuito);
+        consumoEncendidos += circuito.consumo.mw;
+      }
+
+      // Los apagados restantes NO se encienden en este caso
+      aEncenderAdicionales = [];
+    }
+
+    // Convertir a IDs
     const idsApagar = aApagar.map((c) => c.idCircuitoP.toString());
-    const idsEncender = aEncender.map((c) => c.idCircuitoP.toString());
+    const idsEncender = [
+      ...aEncenderObligatorios,
+      ...aEncenderAdicionales,
+    ].map((c) => c.idCircuitoP.toString());
+    const idsMantenidos = mantenidos.map((c) => c.idCircuitoP.toString());
 
     return {
       apagados: idsApagar,
       encendidos: idsEncender,
-      mantenidos: [], // Se calcula en el service
+      mantenidos: idsMantenidos,
     };
   }
 }

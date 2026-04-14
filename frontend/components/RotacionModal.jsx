@@ -74,6 +74,7 @@ export default function RotacionModal({
       // Procesar resultado del backend (ya enriquecido con nombre, número y acción)
       if (resultado && resultado.cola) {
         // Filtrar por acción
+        console.log("Resultado bruto del backend:", resultado);
         const encendidos = (resultado.encendidos || []).filter(c => c.accion === 'encendido');
         const apagados = (resultado.cola || []).filter(c => c.accion === 'apagado');
         const mantenidos = (resultado.cola || []).filter(c => c.accion === 'mantenido');
@@ -101,28 +102,12 @@ export default function RotacionModal({
    * Exporta los resultados a Excel
    */
   const exportarAExcel = () => {
-    const { encendidos, apagados, mantenidos } = circuitosConDetalles;
-    
-    const datosFormateados = [
-      ...encendidos.map(c => ({
-        "Estado": "Encendido ✓",
-        "Número": c.numero,
-        "Nombre": c.nombre,
-        "ID": c.id,
-      })),
-      ...apagados.map(c => ({
-        "Estado": "Apagado",
-        "Número": c.numero,
-        "Nombre": c.nombre,
-        "ID": c.id,
-      })),
-      ...mantenidos.map(c => ({
-        "Estado": "Mantenido",
-        "Número": c.numero,
-        "Nombre": c.nombre,
-        "ID": c.id,
-      })),
-    ];
+    const datosFormateados = (resultadoRotacion.cola || []).map((c, idx) => ({
+      "Índice": idx + 1,
+      "Número": c.numero,
+      "Zona Afectada": c.nombre,
+      "Acción": c.accion === 'encendido' ? 'Encender' : c.accion === 'apagado' ? 'Apagar' : 'Mantener',
+    }));
 
     const hoja = XLSX.utils.json_to_sheet(datosFormateados);
     const libro = XLSX.utils.book_new();
@@ -141,13 +126,15 @@ export default function RotacionModal({
     setError(null);
 
     try {
+      const colaItems = resultadoRotacion.cola || [];
       const datos = {
-        cola: resultadoRotacion.cola,
+        cola: colaItems,
         encendidos: resultadoRotacion.encendidos || [],
         deficitX: parseFloat(deficitX),
         circuitosAEncender: parseInt(circuitosAEncender) || 0,
-        cantidad_apagados: resultadoRotacion.cola.length,
-        cantidad_encendidos: (resultadoRotacion.encendidos || []).length,
+        cantidad_encendidos: colaItems.filter(c => c.accion === 'encendido').length,
+        cantidad_mantenidos: colaItems.filter(c => c.accion === 'mantenido').length,
+        cantidad_apagados: colaItems.filter(c => c.accion === 'apagado').length,
       };
 
       await onConfirmar(datos);
@@ -256,84 +243,82 @@ export default function RotacionModal({
                 </div>
                 <p className="text-sm text-green-800 mt-2">
                   Déficit: <span className="font-bold">{deficitX} MW</span> · 
-                  Circuitos a apagar: <span className="font-bold">{circuitosConDetalles.apagados.length}</span> · 
-                  Circuitos mantenidos: <span className="font-bold">{circuitosConDetalles.mantenidos.length}</span>
-                  {parseInt(circuitosAEncender) > 0 && circuitosConDetalles.encendidos?.length > 0 && (
-                    <> · Circuitos a encender: <span className="font-bold">{circuitosConDetalles.encendidos.length}</span></>
-                  )}
+                  Encendidos: <span className="font-bold">{resultadoRotacion.cola?.filter(c => c.accion === 'encendido').length || 0}</span> · 
+                  Mantenidos: <span className="font-bold">{resultadoRotacion.cola?.filter(c => c.accion === 'mantenido').length || 0}</span> · 
+                  Apagados: <span className="font-bold">{resultadoRotacion.cola?.filter(c => c.accion === 'apagado').length || 0}</span>
                 </p>
               </div>
 
-              {/* CIRCUITOS ENCENDIDOS (VERDE) - AL INICIO */}
-              {circuitosConDetalles.encendidos.length > 0 && (
+              {/* TABLA ENCENDIDOS SEPARADA */}
+              {resultadoRotacion.cola?.filter(c => c.accion === 'encendido').length > 0 && (
                 <div>
                   <h4 className="font-bold text-green-700 mb-3 flex items-center gap-2">
                     <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                    ✓ Circuitos a Encender ({circuitosConDetalles.encendidos.length})
+                    ✓ Circuitos a Encender ({resultadoRotacion.cola?.filter(c => c.accion === 'encendido').length})
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {circuitosConDetalles.encendidos.map((c) => (
-                      <div
-                        key={c.id}
-                        className="bg-green-50 border-l-4 border-green-500 p-3 rounded-lg text-sm hover:bg-green-100 transition-colors"
-                      >
-                        <p className="font-bold text-green-700">{c.nombre}</p>
-                        <div className="grid grid-cols-2 gap-1 text-xs text-green-600 mt-1">
-                          <span>Número: {c.numero}</span>
-                          <span>ID: {c.id}</span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-green-300 bg-white">
+                      <thead className="bg-green-100">
+                        <tr>
+                          <th className="border border-green-300 px-4 py-2 text-left text-sm font-bold text-green-700 w-16">Índice</th>
+                          <th className="border border-green-300 px-4 py-2 text-left text-sm font-bold text-green-700">Número</th>
+                          <th className="border border-green-300 px-4 py-2 text-left text-sm font-bold text-green-700">Zona Afectada</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {resultadoRotacion.cola?.filter(c => c.accion === 'encendido').map((c, idx) => (
+                          <tr key={`encendido-${c.id}`} className={idx % 2 === 0 ? 'bg-green-50' : 'bg-white'}>
+                            <td className="border border-green-300 px-4 py-2 text-sm font-bold text-green-700">{resultadoRotacion.cola?.findIndex(item => item.id === c.id && item.accion === 'encendido') + 1}</td>
+                            <td className="border border-green-300 px-4 py-2 text-sm font-medium text-green-700">{c.numero}</td>
+                            <td className="border border-green-300 px-4 py-2 text-sm text-green-700">{c.nombre}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
 
-              {/* CIRCUITOS APAGADOS (ROJO) */}
-              {circuitosConDetalles.apagados.length > 0 && (
-                <div>
-                  <h4 className="font-bold text-red-700 mb-3 flex items-center gap-2">
-                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                    Circuitos a Apagar ({circuitosConDetalles.apagados.length})
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {circuitosConDetalles.apagados.map((c) => (
-                      <div
-                        key={c.id}
-                        className="bg-red-50 border-l-4 border-red-500 p-3 rounded-lg text-sm hover:bg-red-100 transition-colors"
-                      >
-                        <p className="font-bold text-red-700">{c.nombre}</p>
-                        <div className="grid grid-cols-2 gap-1 text-xs text-red-600 mt-1">
-                          <span>Número: {c.numero}</span>
-                          <span>ID: {c.id}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* TABLA PRINCIPAL DE ROTACIÓN (MANTENIDOS + APAGADOS) */}
+              {resultadoRotacion.cola?.filter(c => c.accion !== 'encendido').length > 0 && (
+              <div>
+                <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                  <span className="w-3 h-3 bg-slate-400 rounded-full"></span>
+                  Cola de Rotación ({resultadoRotacion.cola?.filter(c => c.accion !== 'encendido').length})
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-slate-300 bg-white">
+                    <thead className="bg-slate-200">
+                      <tr>
+                        <th className="border border-slate-300 px-4 py-2 text-left text-sm font-bold text-slate-700 w-16">Índice</th>
+                        <th className="border border-slate-300 px-4 py-2 text-left text-sm font-bold text-slate-700">Número</th>
+                        <th className="border border-slate-300 px-4 py-2 text-left text-sm font-bold text-slate-700">Zona Afectada</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resultadoRotacion.cola?.filter(c => c.accion !== 'encendido').map((c, idx) => {
+                        let rowClassName = '';
+                        if (c.accion === 'apagado') {
+                          rowClassName = 'bg-red-50 hover:bg-red-100';
+                        } else if (c.accion === 'mantenido') {
+                          rowClassName = 'bg-slate-100 hover:bg-slate-200 opacity-75';
+                        }
 
-              {/* CIRCUITOS MANTENIDOS (GRIS) */}
-              {circuitosConDetalles.mantenidos.length > 0 && (
-                <div>
-                  <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    <span className="w-3 h-3 bg-slate-400 rounded-full"></span>
-                    Circuitos Mantenidos ({circuitosConDetalles.mantenidos.length})
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {circuitosConDetalles.mantenidos.map((c) => (
-                      <div
-                        key={c.id}
-                        className="bg-slate-100 border-l-4 border-slate-400 p-3 rounded-lg text-sm hover:bg-slate-200 transition-colors opacity-75"
-                      >
-                        <p className="font-bold text-slate-700">{c.nombre}</p>
-                        <div className="grid grid-cols-2 gap-1 text-xs text-slate-600 mt-1">
-                          <span>Número: {c.numero}</span>
-                          <span>ID: {c.id}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        let textColor = 'text-slate-700';
+                        if (c.accion === 'apagado') textColor = 'text-red-700';
+                        
+                        return (
+                          <tr key={`${c.accion}-${c.id}`} className={rowClassName}>
+                            <td className="border border-slate-300 px-4 py-2 text-sm font-bold text-slate-600">{idx + 1}</td>
+                            <td className={`border border-slate-300 px-4 py-2 text-sm font-medium ${textColor}`}>{c.numero}</td>
+                            <td className={`border border-slate-300 px-4 py-2 text-sm ${textColor}`}>{c.nombre}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
+              </div>
               )}
 
               {/* BOTONES */}

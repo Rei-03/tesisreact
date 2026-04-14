@@ -24,15 +24,11 @@ export class RotacionesService {
    * 1. Obtiene circuitos con consumos desde circuitos-ms
    * 2. Obtiene aseguramientos para identificar protegidos
    * 3. Enriquece circuitos con estado y timestamps
-   * 4. Ejecuta algoritmo considerando circuitosAEncender
-   * 5. Retorna qué apagar y qué encender (con acciones)
-   * 
-   * IMPORTANTE: Si enciendes circuitos, su consumo se suma al déficit
-   * (porque van a consumir potencia)
-   * Ejemplo: déficit 50 + encender 30 MW = necesita apagar 80 MW total
+   * 4. Ejecuta algoritmo que retorna apagados, encendidos y mantenidos
+   * 5. Enriquece resultado con información completa y acciones
    * 
    * @param createRotacioneDto Contiene deficitX, fecha, circuitosAEncender
-   * @returns Resultado con cola nueva e IDs a encender (vacío si circuitosAEncender=0)
+   * @returns Resultado con cola nueva (apagados + mantenidos) e IDs a encender
    */
   async generate(
     createRotacioneDto: CreateRotacioneDto,
@@ -81,13 +77,11 @@ export class RotacionesService {
       const resultado: ResultadoRotacion = RotacionAlgoritmo.ejecutar(
         circuitosAptos,
         createRotacioneDto.deficitX,
-        circuitosAEncender > 0, // Solo encender si circuitosAEncender > 0
-        [], // Cola VACÍA: siempre crea nueva
         circuitosAEncender,
       );
 
       this.logger.debug(
-        `Rotación generada: ${resultado.apagados.length} apagados, ${resultado.encendidos.length} encendidos`,
+        `Rotación generada: ${resultado.apagados.length} apagados, ${resultado.encendidos.length} encendidos, ${resultado.mantenidos.length} mantenidos`,
       );
 
       // Enriquecer resultado con información de circuitos e incluir acciones
@@ -95,44 +89,30 @@ export class RotacionesService {
         circuitos.map(c => [c.idCircuitoP.toString(), c])
       );
 
-      // Obtener lista de circuitos originalmente apagados
-      const apagadosOriginales = new Set(
-        circuitosAptos
-          .filter(c => c.estado === 'apagado')
-          .map(c => c.idCircuitoP.toString())
-      );
-
-      // Calcular mantenidos: apagados originales - (nuevos apagados + encendidos)
-      const apagadosSet = new Set(resultado.apagados);
-      const encendidosSet = new Set(resultado.encendidos);
-      const mantenidos = Array.from(apagadosOriginales).filter(
-        id => !apagadosSet.has(id) && !encendidosSet.has(id)
-      );
-
       // Enriquecer cada lista con información completa
       const apagadosEnriquecidos = resultado.apagados.map((idStr) => ({
         id: Number(idStr),
-        numero: mapaCircuitos.get(idStr)?.idCircuitoP?.toString() || idStr,
-        nombre: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        numero: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        nombre: mapaCircuitos.get(idStr)?.ZonaAfectada || 'Sin zona',
         accion: 'apagado' as const,
       }));
 
-      const mantenidosEnriquecidos = mantenidos.map((idStr) => ({
+      const mantenidosEnriquecidos = resultado.mantenidos.map((idStr) => ({
         id: Number(idStr),
-        numero: mapaCircuitos.get(idStr)?.idCircuitoP?.toString() || idStr,
-        nombre: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        numero: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        nombre: mapaCircuitos.get(idStr)?.ZonaAfectada || 'Sin zona',
         accion: 'mantenido' as const,
       }));
 
       const encendidosEnriquecidos = resultado.encendidos.map((idStr) => ({
         id: Number(idStr),
-        numero: mapaCircuitos.get(idStr)?.idCircuitoP?.toString() || idStr,
-        nombre: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        numero: mapaCircuitos.get(idStr)?.CircuitoP || `Circuito ${idStr}`,
+        nombre: mapaCircuitos.get(idStr)?.ZonaAfectada || 'Sin zona',
         accion: 'encendido' as const,
       }));
 
-      // Combinar apagados + mantenidos para la cola (datos de apagón)
-      const colaCompleta = [...apagadosEnriquecidos, ...mantenidosEnriquecidos];
+      // Combinar en orden: encendidos + mantenidos + apagados para la cola
+      const colaCompleta = [...encendidosEnriquecidos, ...mantenidosEnriquecidos, ...apagadosEnriquecidos];
 
       return new RotacionResultadoDto(colaCompleta, encendidosEnriquecidos);
     } catch (error) {

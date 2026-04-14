@@ -7,6 +7,11 @@ export const envSchema = z.object({
   NATS_URLS: z.string()
     .default("nats://localhost:4222")
     .transform((val) => val.split(",")),
+  // SQL Server (SIGERE) Configuration
+  DB_SERVER_CIRCUITOS: z.string().default("localhost"),
+  DB_USER_CIRCUITOS: z.string().default("sa"),
+  DB_PASSWORD_CIRCUITOS: z.string().default("12341234"),
+  DB_NAME_CIRCUITOS: z.string().default("SIGERE"),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
