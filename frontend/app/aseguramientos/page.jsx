@@ -46,8 +46,9 @@ export default function AseguramientosPage() {
         apiClient.aseguramientos.getAll(),
         apiClient.circuitos.getApagables(),
       ]);
-      setAseguramientos(asg);
-      setCircuitos(circ);
+      // Extraer arrays correctamente de la respuesta de la API
+      setAseguramientos((asg?.results || asg) || []);
+      setCircuitos((circ?.results || circ) || []);
     } catch (err) {
       setError("Error cargando datos: " + (err?.message || "Error desconocido"));
     } finally {

@@ -42,9 +42,10 @@ export default function DashboardPage() {
         apiClient.aseguramientos.getByFecha(hoy),
         apiClient.proximasAperturas.getAll(),
       ]);
-      setCircuitos(circ || []);
-      setAseguramientos(asg || []);
-      setProxAperturas(prox || []);
+      // Extraer arrays correctamente de la respuesta de la API
+      setCircuitos((circ?.results || circ) || []);
+      setAseguramientos((asg?.results || asg) || []);
+      setProxAperturas((prox?.results || prox) || []);
     } catch (err) {
       console.error("Error loading dashboard data:", err);
     } finally {
@@ -57,9 +58,15 @@ export default function DashboardPage() {
       // Llamar al servicio
       const respuesta = await generarRotacion(datos);
       
+      // Extraer valores con seguridad
+      const cantidadCircuitos = datos?.cantidad_circuitos || 0;
+      const mwTotal = (datos?.mw_total !== undefined && datos.mw_total !== null) 
+        ? datos.mw_total 
+        : 0;
+      
       setMensajeRotacion({
         tipo: "éxito",
-        texto: `Rotación insertada exitosamente con ${datos.cantidad_circuitos} circuito(s) y ${datos.mw_total.toFixed(2)} MW.`
+        texto: `Rotación insertada exitosamente con ${cantidadCircuitos} circuito(s) y ${parseFloat(mwTotal).toFixed(2)} MW.`
       });
       
       console.log("Rotación confirmada:", respuesta);
