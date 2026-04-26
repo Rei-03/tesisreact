@@ -6,14 +6,24 @@ import { CircuitosRepository } from './circuitos.repository';
 
 @Injectable()
 export class CircuitosService {
-  constructor(private readonly circuitoRepo: CircuitosRepository){}
+  constructor(private readonly circuitoRepo: CircuitosRepository) {}
   create(createCircuitoDto: CreateCircuitoDto) {
     return 'This action adds a new circuito';
   }
 
-  async findAll(take: number = 20, skip: number = 0, apagable?: boolean, bloque?: string) {
+  async findAll(
+    take: number = 20,
+    skip: number = 0,
+    apagable?: boolean,
+    bloque?: string,
+  ) {
     const page = skip / take + 1;
-    const { records, total } = await this.circuitoRepo.findWithFilters(take, skip, apagable, bloque);
+    const { records, total } = await this.circuitoRepo.findWithFilters(
+      take,
+      skip,
+      apagable,
+      bloque,
+    );
     const totalPages = Math.ceil(total / take);
 
     return {
@@ -42,9 +52,13 @@ export class CircuitosService {
     const take = payload.take || 20;
     const skip = payload.skip || 0;
     const fecha = payload.fecha || new Date().toISOString().split('T')[0];
-    
-    const records = await this.circuitoRepo.findWithConsumptionAndLastApagon(fecha, take, skip);
-    
+
+    const records = await this.circuitoRepo.findWithConsumptionAndLastApagon(
+      fecha,
+      take,
+      skip,
+    );
+
     if (!records || records.length === 0) {
       return {
         results: [],

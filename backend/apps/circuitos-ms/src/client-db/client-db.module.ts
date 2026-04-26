@@ -5,7 +5,10 @@ import { env } from '../config/env';
 const dbConfig = {
   user: env.DB_USER_CIRCUITOS,
   password: env.DB_PASSWORD_CIRCUITOS,
-  server: env.NODE_ENV === 'production' ? 'host.docker.internal' : env.DB_SERVER_CIRCUITOS,
+  server:
+    env.NODE_ENV === 'production'
+      ? 'host.docker.internal'
+      : env.DB_SERVER_CIRCUITOS,
   database: env.DB_NAME_CIRCUITOS,
   options: {
     encrypt: false,
@@ -15,7 +18,6 @@ const dbConfig = {
 };
 
 console.log('Configuración de base de datos:', dbConfig);
-
 
 async function createDatabaseConnection() {
   try {

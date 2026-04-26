@@ -71,7 +71,7 @@ describe('Apagones Module', () => {
       expect(mockDb.input).toHaveBeenCalledWith(
         'idApagon',
         expect.anything(),
-        123
+        123,
       );
     });
 
@@ -107,7 +107,7 @@ describe('Apagones Module', () => {
       expect(mockDb.input).toHaveBeenCalledWith(
         'idCircuitoP',
         expect.anything(),
-        100
+        100,
       );
     });
 
@@ -168,14 +168,14 @@ describe('Apagones Module', () => {
         '2024-01-01',
         '2024-01-31',
         20,
-        0
+        0,
       );
 
       expect(result).toEqual(mockData);
       expect(mockDb.input).toHaveBeenCalledWith(
         'fechaInicio',
         expect.anything(),
-        expect.any(Date)
+        expect.any(Date),
       );
     });
 
@@ -273,7 +273,11 @@ describe('Apagones Module', () => {
       const spyService = jest.spyOn(service, 'findByCircuitoId');
       mockDb.query.mockResolvedValue({ recordset: [] });
 
-      await controller.findByCircuitoId({ idCircuitoP: 100, take: 10, skip: 5 });
+      await controller.findByCircuitoId({
+        idCircuitoP: 100,
+        take: 10,
+        skip: 5,
+      });
 
       expect(spyService).toHaveBeenCalledWith(100, { take: 10, skip: 5 });
     });
@@ -363,7 +367,7 @@ describe('Apagones Module', () => {
       mockDb.query.mockRejectedValue(error);
 
       await expect(repository.findAll(20, 0)).rejects.toThrow(
-        'Database connection failed'
+        'Database connection failed',
       );
     });
 
