@@ -1,20 +1,23 @@
-import { Inject, Injectable } from "@nestjs/common";
-import type { DbConnection } from "../client-db/client-db.module";
-import * as sql from 'mssql'
+import { Inject, Injectable } from '@nestjs/common';
+import type { DbConnection } from '../client-db/client-db.module';
+import * as sql from 'mssql';
 
 @Injectable()
 export class CircuitosRepository {
-    constructor(@Inject("DATABASE_CONNECTION") private readonly db: DbConnection) { }
+  constructor(
+    @Inject('DATABASE_CONNECTION') private readonly db: DbConnection,
+  ) {}
 
-    async find(take = 20, skip = 0) {
-        const countResult = await this.db.request()
-            .query(`SELECT COUNT(*) as total FROM ap_circuitos`);
-        const total = countResult.recordset[0].total;
+  async find(take = 20, skip = 0) {
+    const countResult = await this.db
+      .request()
+      .query(`SELECT COUNT(*) as total FROM ap_circuitos`);
+    const total = countResult.recordset[0].total;
 
-        const result = await this.db.request()
-            .input('take', sql.Int, take)
-            .input('skip', sql.Int, skip)
-            .query(`
+    const result = await this.db
+      .request()
+      .input('take', sql.Int, take)
+      .input('skip', sql.Int, skip).query(`
       SELECT * FROM (
         SELECT idCircuitoP, idProv, Circuito33, Bloque, CircuitoP, Clientes, ZonaAfectada, Apagable,
                ROW_NUMBER() OVER (ORDER BY CircuitoP) AS RowNum
@@ -22,18 +25,18 @@ export class CircuitosRepository {
       ) AS ResultWithRows
       WHERE RowNum > @skip AND RowNum <= (@skip + @take)
       ORDER BY CircuitoP
-    `)
-        return {
-            records: (await result).recordset,
-            total: total
-        };
-    }
+    `);
+    return {
+      records: (await result).recordset,
+      total: total,
+    };
+  }
 
-    async findWithConsumption(take = 20, skip = 0) {
-        const result = this.db.request()
-            .input('take', sql.Int, take)
-            .input('skip', sql.Int, skip)
-            .query(`
+  async findWithConsumption(take = 20, skip = 0) {
+    const result = this.db
+      .request()
+      .input('take', sql.Int, take)
+      .input('skip', sql.Int, skip).query(`
       SELECT * FROM (
         SELECT idCircuitoP, idProv, Circuito33, Bloque, CircuitoP, Clientes, ZonaAfectada, Apagable,
                ROW_NUMBER() OVER (ORDER BY CircuitoP) AS RowNum
@@ -41,16 +44,16 @@ export class CircuitosRepository {
       ) AS ResultWithRows
       WHERE RowNum > @skip AND RowNum <= (@skip + @take)
       ORDER BY CircuitoP
-    `)
-        return (await result).recordset
-    }
+    `);
+    return (await result).recordset;
+  }
 
-    async findWithConsumptionByDate(fecha: string, take = 20, skip = 0) {
-        const result = await this.db.request()
-            .input('fecha', sql.Date, new Date(fecha))
-            .input('take', sql.Int, take)
-            .input('skip', sql.Int, skip)
-            .query(`
+  async findWithConsumptionByDate(fecha: string, take = 20, skip = 0) {
+    const result = await this.db
+      .request()
+      .input('fecha', sql.Date, new Date(fecha))
+      .input('take', sql.Int, take)
+      .input('skip', sql.Int, skip).query(`
             SELECT * FROM (
                 SELECT 
                     c.idCircuitoP, c.idProv, c.Circuito33, c.Bloque, 
@@ -69,65 +72,121 @@ export class CircuitosRepository {
             ORDER BY CircuitoP
         `);
 
-        return result.recordset.map(row => {
-            // Separamos las horas del resto de los datos del circuito
-            const {
-                h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11,
-                h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23,
-                RowNum, fecha, ...datosCircuito
-            } = row;
+    return result.recordset.map((row) => {
+      // Separamos las horas del resto de los datos del circuito
+      const {
+        h0,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        h7,
+        h8,
+        h9,
+        h10,
+        h11,
+        h12,
+        h13,
+        h14,
+        h15,
+        h16,
+        h17,
+        h18,
+        h19,
+        h20,
+        h21,
+        h22,
+        h23,
+        RowNum,
+        fecha,
+        ...datosCircuito
+      } = row;
 
-            return {
-                ...datosCircuito,
-                consumo: {
-                    mw: row.h0 || 0, // En lugar de hora actual, usamos h0 (inicio del día)
-                    historico: [
-                        h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11,
-                        h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23
-                    ],
-                    fechaReferencia: fecha ? new Date(fecha).toISOString().split('T')[0] : null
-                }
-            };
-        });
+      return {
+        ...datosCircuito,
+        consumo: {
+          mw: row.h0 || 0, // En lugar de hora actual, usamos h0 (inicio del día)
+          historico: [
+            h0,
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6,
+            h7,
+            h8,
+            h9,
+            h10,
+            h11,
+            h12,
+            h13,
+            h14,
+            h15,
+            h16,
+            h17,
+            h18,
+            h19,
+            h20,
+            h21,
+            h22,
+            h23,
+          ],
+          fechaReferencia: fecha
+            ? new Date(fecha).toISOString().split('T')[0]
+            : null,
+        },
+      };
+    });
+  }
+
+  /**
+   * Obtiene circuitos filtrados por apagable y/o bloque
+   * Retorna resultados paginados con metadata
+   */
+  async findWithFilters(
+    take = 20,
+    skip = 0,
+    apagable?: boolean,
+    bloque?: string,
+  ) {
+    // Construir WHERE clause dinámico
+    const whereConditions: string[] = [];
+    let countRequest = this.db.request();
+    let dataRequest = this.db.request();
+
+    if (apagable !== undefined) {
+      countRequest = countRequest.input('apagable', sql.Bit, apagable ? 1 : 0);
+      dataRequest = dataRequest.input('apagable', sql.Bit, apagable ? 1 : 0);
+      whereConditions.push('Apagable = @apagable');
     }
 
-    /**
-     * Obtiene circuitos filtrados por apagable y/o bloque
-     * Retorna resultados paginados con metadata
-     */
-    async findWithFilters(take = 20, skip = 0, apagable?: boolean, bloque?: string) {
-        // Construir WHERE clause dinámico
-        let whereConditions: string[] = [];
-        let countRequest = this.db.request();
-        let dataRequest = this.db.request();
+    if (bloque != null) {
+      countRequest = countRequest.input('bloque', sql.VarChar(50), bloque);
+      dataRequest = dataRequest.input('bloque', sql.VarChar(50), bloque);
+      whereConditions.push('Bloque = @bloque');
+    }
 
-        if (apagable !== undefined) {
-            countRequest = countRequest.input('apagable', sql.Bit, apagable ? 1 : 0);
-            dataRequest = dataRequest.input('apagable', sql.Bit, apagable ? 1 : 0);
-            whereConditions.push('Apagable = @apagable');
-        }
+    dataRequest = dataRequest
+      .input('take', sql.Int, take)
+      .input('skip', sql.Int, skip);
 
-        if (bloque != null) {
-            countRequest = countRequest.input('bloque', sql.VarChar(50), bloque);
-            dataRequest = dataRequest.input('bloque', sql.VarChar(50), bloque);
-            whereConditions.push('Bloque = @bloque');
-        }
+    const whereClause =
+      whereConditions.length > 0
+        ? 'WHERE ' + whereConditions.join(' AND ')
+        : '';
 
-        dataRequest = dataRequest
-            .input('take', sql.Int, take)
-            .input('skip', sql.Int, skip);
-
-        const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
-
-        // Contar total de registros que coinciden con los filtros
-        const countResult = await countRequest.query(`
+    // Contar total de registros que coinciden con los filtros
+    const countResult = await countRequest.query(`
             SELECT COUNT(*) as total FROM ap_circuitos 
             ${whereClause}
         `);
 
-        const total = countResult.recordset[0]?.total || 0;
+    const total = countResult.recordset[0]?.total || 0;
 
-        const result = await dataRequest.query(`
+    const result = await dataRequest.query(`
             SELECT * FROM (
                 SELECT idCircuitoP, idProv, Circuito33, Bloque, CircuitoP, Clientes, ZonaAfectada, Apagable,
                        ROW_NUMBER() OVER (ORDER BY CircuitoP) AS RowNum
@@ -138,23 +197,23 @@ export class CircuitosRepository {
             ORDER BY CircuitoP
         `);
 
-        return {
-            records: result.recordset,
-            total: total
-        };
-    }
+    return {
+      records: result.recordset,
+      total: total,
+    };
+  }
 
-    /**
-     * Obtiene circuitos con consumo más actual por id de circuito en ap_curvas
-     * Y el último apagón de cada circuito
-     * Optimizado en una sola query para máximo rendimiento
-     * Perfecto para rotaciones-ms que necesita ambos datos
-     */
-    async findWithConsumptionAndLastApagon(fecha: string, take = 20, skip = 0) {
-        const result = await this.db.request()
-            .input('take', sql.Int, take)
-            .input('skip', sql.Int, skip)
-            .query(`
+  /**
+   * Obtiene circuitos con consumo más actual por id de circuito en ap_curvas
+   * Y el último apagón de cada circuito
+   * Optimizado en una sola query para máximo rendimiento
+   * Perfecto para rotaciones-ms que necesita ambos datos
+   */
+  async findWithConsumptionAndLastApagon(fecha: string, take = 20, skip = 0) {
+    const result = await this.db
+      .request()
+      .input('take', sql.Int, take)
+      .input('skip', sql.Int, skip).query(`
                 WITH LastCurvas AS (
                     -- Obtener el registro más reciente de consumo por circuito
                     SELECT 
@@ -202,44 +261,96 @@ export class CircuitosRepository {
                 ORDER BY CircuitoP
             `);
 
-        return result.recordset.map(row => {
-            // Separamos las horas del resto de los datos del circuito
-            const {
-                h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11,
-                h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23,
-                RowNum, fechaConsumo, 
-                idApagon, FechaRetiro, FechaCierre, MWAfectados, ApagonObservaciones, AbiertoPor,
-                ...datosCircuito
-            } = row;
+    return result.recordset.map((row) => {
+      // Separamos las horas del resto de los datos del circuito
+      const {
+        h0,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        h7,
+        h8,
+        h9,
+        h10,
+        h11,
+        h12,
+        h13,
+        h14,
+        h15,
+        h16,
+        h17,
+        h18,
+        h19,
+        h20,
+        h21,
+        h22,
+        h23,
+        RowNum,
+        fechaConsumo,
+        idApagon,
+        FechaRetiro,
+        FechaCierre,
+        MWAfectados,
+        ApagonObservaciones,
+        AbiertoPor,
+        ...datosCircuito
+      } = row;
 
-            // Estructura de respuesta con consumo más actual y último apagón
-            const circuitoConDatos = {
-                ...datosCircuito,
-                consumo: {
-                    mw: row.h0 || 0,
-                    historico: [
-                        h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11,
-                        h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23
-                    ],
-                    fechaReferencia: fechaConsumo ? new Date(fechaConsumo).toISOString().split('T')[0] : null,
-                    fechaHora: fechaConsumo ? new Date(fechaConsumo).toISOString() : null
-                }
-            };
+      // Estructura de respuesta con consumo más actual y último apagón
+      const circuitoConDatos = {
+        ...datosCircuito,
+        consumo: {
+          mw: row.h0 || 0,
+          historico: [
+            h0,
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6,
+            h7,
+            h8,
+            h9,
+            h10,
+            h11,
+            h12,
+            h13,
+            h14,
+            h15,
+            h16,
+            h17,
+            h18,
+            h19,
+            h20,
+            h21,
+            h22,
+            h23,
+          ],
+          fechaReferencia: fechaConsumo
+            ? new Date(fechaConsumo).toISOString().split('T')[0]
+            : null,
+          fechaHora: fechaConsumo ? new Date(fechaConsumo).toISOString() : null,
+        },
+      };
 
-            // Agregar último apagón si existe
-            if (idApagon) {
-                circuitoConDatos['ultimoApagon'] = {
-                    idApagon,
-                    FechaRetiro,
-                    FechaCierre,
-                    MWAfectados,
-                    Observaciones: ApagonObservaciones,
-                    AbiertoPor,
-                    estado: FechaCierre ? 'cerrado' : 'abierto'
-                };
-            }
+      // Agregar último apagón si existe
+      if (idApagon) {
+        circuitoConDatos['ultimoApagon'] = {
+          idApagon,
+          FechaRetiro,
+          FechaCierre,
+          MWAfectados,
+          Observaciones: ApagonObservaciones,
+          AbiertoPor,
+          estado: FechaCierre ? 'cerrado' : 'abierto',
+        };
+      }
 
-            return circuitoConDatos;
-        });
-    }
+      return circuitoConDatos;
+    });
+  }
 }

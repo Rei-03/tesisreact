@@ -9,7 +9,10 @@ export class ApagonesController {
   constructor(private readonly apagonesService: ApagonesService) {}
 
   @MessagePattern('apagones.findAll')
-  findAll(@Payload() payload: FindApagonesPaginationDto | { page?: number; pageSize?: number }) {
+  findAll(
+    @Payload()
+    payload: FindApagonesPaginationDto | { page?: number; pageSize?: number },
+  ) {
     return this.apagonesService.findAll(payload);
   }
 
@@ -20,7 +23,7 @@ export class ApagonesController {
 
   @MessagePattern('apagones.findByCircuitoId')
   findByCircuitoId(
-    @Payload() data: { idCircuitoP: number; page?: number; pageSize?: number }
+    @Payload() data: { idCircuitoP: number; page?: number; pageSize?: number },
   ) {
     return this.apagonesService.findByCircuitoId(data.idCircuitoP, {
       page: data.page,
@@ -35,7 +38,7 @@ export class ApagonesController {
 
   @MessagePattern('apagones.findByProvincia')
   findByProvincia(
-    @Payload() data: { idProv: string; page?: number; pageSize?: number }
+    @Payload() data: { idProv: string; page?: number; pageSize?: number },
   ) {
     return this.apagonesService.findByProvincia(data.idProv, {
       page: data.page,

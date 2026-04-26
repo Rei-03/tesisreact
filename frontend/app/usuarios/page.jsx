@@ -123,34 +123,34 @@ export default function UsuariosPage() {
     const existe = usuariosActuales.some((u) => u.login === login);
     setLoginUnico(!existe);
   };
-    }
+  //   }
 
-    try {
-      setCargando(true);
-      const nuevoUsuario = {
-        nombre: nuevoNombre,
-        login: nuevoLogin,
-        password: nuevoPassword,
-        rol: nuevoRol,
-      };
+  //   try {
+  //     setCargando(true);
+  //     const nuevoUsuario = {
+  //       nombre: nuevoNombre,
+  //       login: nuevoLogin,
+  //       password: nuevoPassword,
+  //       rol: nuevoRol,
+  //     };
 
-      await crearUsuario(nuevoUsuario);
+  //     await crearUsuario(nuevoUsuario);
 
-      setExito(`Usuario "${nuevoNombre}" creado exitosamente como ${nuevoRol}`);
-      setNuevoNombre("");
-      setNuevoLogin("");
-      setNuevoPassword("");
-      setConfirmPassword("");
-      setNuevoRol("operador");
+  //     setExito(`Usuario "${nuevoNombre}" creado exitosamente como ${nuevoRol}`);
+  //     setNuevoNombre("");
+  //     setNuevoLogin("");
+  //     setNuevoPassword("");
+  //     setConfirmPassword("");
+  //     setNuevoRol("operador");
       
-      // Recargar usuarios
-      await cargarUsuarios();
-    } catch (err) {
-      setError("Error creando usuario: " + (err?.message || "Error desconocido"));
-    } finally {
-      setCargando(false);
-    }
-  };
+  //     // Recargar usuarios
+  //     await cargarUsuarios();
+  //   } catch (err) {
+  //     setError("Error creando usuario: " + (err?.message || "Error desconocido"));
+  //   } finally {
+  //     setCargando(false);
+  //   }
+  // };
 
   const handleEliminarUsuario = async (usuarioId, nombreUsuario) => {
     if (!window.confirm(`¿Estás seguro de que quieres eliminar a "${nombreUsuario}"?`)) {
