@@ -43,6 +43,11 @@ export class CircuitosController {
     return this.circuitosService.findWithConsumptionAndApagones(payload);
   }
 
+  @MessagePattern('circuitos.findCurrentHourTotalMW')
+  findCurrentHourTotalMW() {
+    return this.circuitosService.findCurrentHourTotalMW();
+  }
+
   @MessagePattern('circuitos.findOne')
   findOne(@Payload() data: { id: number }) {
     return this.circuitosService.findOne(data.id);

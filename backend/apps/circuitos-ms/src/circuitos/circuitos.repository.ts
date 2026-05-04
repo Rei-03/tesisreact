@@ -2,11 +2,45 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { DbConnection } from '../client-db/client-db.module';
 import * as sql from 'mssql';
 
+type CurvaHourRow = {
+  h0?: number | null;
+  h1?: number | null;
+  h2?: number | null;
+  h3?: number | null;
+  h4?: number | null;
+  h5?: number | null;
+  h6?: number | null;
+  h7?: number | null;
+  h8?: number | null;
+  h9?: number | null;
+  h10?: number | null;
+  h11?: number | null;
+  h12?: number | null;
+  h13?: number | null;
+  h14?: number | null;
+  h15?: number | null;
+  h16?: number | null;
+  h17?: number | null;
+  h18?: number | null;
+  h19?: number | null;
+  h20?: number | null;
+  h21?: number | null;
+  h22?: number | null;
+  h23?: number | null;
+};
+
 @Injectable()
 export class CircuitosRepository {
   constructor(
     @Inject('DATABASE_CONNECTION') private readonly db: DbConnection,
   ) {}
+
+  private getCurrentHourConsumption(row: CurvaHourRow): number {
+    const currentHour = new Date().getHours();
+    const hourKey = `h${currentHour}` as keyof CurvaHourRow;
+    const value = row[hourKey];
+    return Number(value ?? 0);
+  }
 
   async find(take = 20, skip = 0) {
     const countResult = await this.db
@@ -107,7 +141,7 @@ export class CircuitosRepository {
       return {
         ...datosCircuito,
         consumo: {
-          mw: row.h0 || 0, // En lugar de hora actual, usamos h0 (inicio del día)
+          mw: this.getCurrentHourConsumption(row),
           historico: [
             h0,
             h1,
@@ -303,7 +337,7 @@ export class CircuitosRepository {
       const circuitoConDatos = {
         ...datosCircuito,
         consumo: {
-          mw: row.h0 || 0,
+          mw: this.getCurrentHourConsumption(row),
           historico: [
             h0,
             h1,
@@ -352,5 +386,29 @@ export class CircuitosRepository {
 
       return circuitoConDatos;
     });
+  }
+
+  async findLatestCurvesByCircuit() {
+    const result = await this.db.request().query(`
+      WITH LastCurvas AS (
+          SELECT
+              idCircuitoP,
+              h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11,
+              h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23,
+              fecha,
+              ROW_NUMBER() OVER (PARTITION BY idCircuitoP ORDER BY fecha DESC) AS CurvaRank
+          FROM ap_curvas
+      )
+      SELECT
+          idCircuitoP,
+          h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11,
+          h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23,
+          fecha
+      FROM LastCurvas
+      WHERE CurvaRank = 1
+        AND idCircuitoP IS NOT NULL
+    `);
+
+    return result.recordset;
   }
 }

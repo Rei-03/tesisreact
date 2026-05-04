@@ -38,6 +38,13 @@ export class CircuitosController {
     }));
   }
 
+  @Get('mw-current-total')
+  findCurrentHourTotalMW() {
+    return firstValueFrom(
+      this.client.send('circuitos.findCurrentHourTotalMW', {}),
+    );
+  }
+
   @Get()
   findAll(
     @Query('page') page?: number,

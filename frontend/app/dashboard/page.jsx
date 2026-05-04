@@ -2,7 +2,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import {
-  AlertTriangle,
   Grid3x3,
   Zap,
   Shield,
@@ -10,9 +9,6 @@ import {
 import { apiClient } from "@/lib/api/apiClient";
 import { generarRotacion } from "@/lib/services/rotacionService";
 import RotacionModal from "@/components/RotacionModal";
-import {
-  calcularMWPorBloque,
-} from "@/lib/utils/circuitUtils";
 import { getToday } from "@/lib/utils/dateUtils";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import AlertMessage from "@/components/shared/AlertMessage";
@@ -25,7 +21,7 @@ export default function DashboardPage() {
   const [totalAseguramientosHoy, setTotalAseguramientosHoy] = useState(0);
   const [aseguramientos, setAseguramientos] = useState([]);
   const [circuitosApagados, setCircuitosApagados] = useState([]);
-  const [proxAperturas, setProxAperturas] = useState([]);
+  const [mwHoraActualTotal, setMWHoraActualTotal] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [modalRotacionAbierto, setModalRotacionAbierto] = useState(false);
   const [mensajeRotacion, setMensajeRotacion] = useState(null);
@@ -38,12 +34,12 @@ export default function DashboardPage() {
     try {
       setCargando(true);
       const hoy = getToday();
-      const [circ, asgCount, asgListado, abiertos, prox] = await Promise.all([
+      const [circ, asgCount, asgListado, abiertos, mwTotal] = await Promise.all([
         apiClient.circuitos.getApagables(),
         apiClient.aseguramientos.countByFecha(hoy),
         apiClient.aseguramientos.getAll(1, 5),
         apiClient.apagones.getOpen(),
-        apiClient.proximasAperturas.getAll(),
+        apiClient.circuitos.getCurrentHourTotalMW(),
       ]);
 
       const abiertosRaw = (abiertos?.results || abiertos) || [];
@@ -66,7 +62,8 @@ export default function DashboardPage() {
       setTotalAseguramientosHoy(Number(asgCount?.count || 0));
       setAseguramientos((asgListado?.results || asgListado) || []);
       setCircuitosApagados(abiertosPorCircuito);
-      setProxAperturas((prox?.results || prox) || []);
+      const totalMW = Number(mwTotal?.totalMW);
+      setMWHoraActualTotal(Number.isFinite(totalMW) ? totalMW : null);
     } catch (err) {
       console.error("Error loading dashboard data:", err);
     } finally {
@@ -102,13 +99,13 @@ export default function DashboardPage() {
 
   // CALCULAR MÉTRICAS
   const totalCircuitosApagados = circuitosApagados.length;
-  const mwPorBloque = calcularMWPorBloque(proxAperturas);
+  const mwHoraActualMostrar = mwHoraActualTotal === null ? 0 : mwHoraActualTotal;
 
   // DATOS PARA GRÁFICOS
-  const dataGraficoMW = Object.entries(mwPorBloque).map(([bloque, mw]) => ({
-    bloque: `Bloque ${bloque}`,
-    MW: parseFloat(mw.toFixed(1)),
-  }));
+  const dataGraficoMW = [{
+    bloque: "Total",
+    MW: parseFloat(mwHoraActualMostrar.toFixed(1)),
+  }];
 
   const dataGraficoHora = [
     { hora: "08:00", deficit: 20, asegurados: 8 },
@@ -151,7 +148,7 @@ export default function DashboardPage() {
       )}
 
       {/* TARJETAS DE RESUMEN */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <DashboardMetricCard
           icon={Grid3x3}
           title="Circuitos Apagados"
@@ -171,18 +168,10 @@ export default function DashboardPage() {
         <DashboardMetricCard
           icon={Zap}
           title="MW Hora Actual"
-          value={Object.values(mwPorBloque).reduce((a, b) => a + b, 0).toFixed(1)}
-          subtitle={`${proxAperturas.length} circuitos monitoreados`}
+          value={mwHoraActualMostrar.toFixed(1)}
+          subtitle="Total del sistema en hora actual"
           bgColor="border-yellow-500"
           iconBgColor="bg-yellow-100 text-yellow-600"
-        />
-        <DashboardMetricCard
-          icon={AlertTriangle}
-          title="Próx. Aperturas"
-          value={proxAperturas.length}
-          subtitle="Agrupadas por bloque"
-          bgColor="border-red-500"
-          iconBgColor="bg-red-100 text-red-600"
         />
       </div>
 
