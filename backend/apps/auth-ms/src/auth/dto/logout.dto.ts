@@ -1,4 +1,4 @@
 export class LogoutDto {
-  userId: string;
+  userId!: string;
   token?: string;
 }

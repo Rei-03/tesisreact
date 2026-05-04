@@ -127,14 +127,21 @@ export default function RotacionModal({
 
     try {
       const colaItems = resultadoRotacion.cola || [];
+      const circuitosEncendidos = colaItems.filter(c => c.accion === 'encendido');
+      
+      // Calcular MW total basado en los circuitos encendidos
+      const mw_total = circuitosEncendidos.reduce((sum, c) => sum + (c.mw || 0), 0);
+      
       const datos = {
         cola: colaItems,
         encendidos: resultadoRotacion.encendidos || [],
         deficitX: parseFloat(deficitX),
         circuitosAEncender: parseInt(circuitosAEncender) || 0,
-        cantidad_encendidos: colaItems.filter(c => c.accion === 'encendido').length,
+        cantidad_circuitos: circuitosEncendidos.length,
+        cantidad_encendidos: circuitosEncendidos.length,
         cantidad_mantenidos: colaItems.filter(c => c.accion === 'mantenido').length,
         cantidad_apagados: colaItems.filter(c => c.accion === 'apagado').length,
+        mw_total: mw_total,
       };
 
       await onConfirmar(datos);

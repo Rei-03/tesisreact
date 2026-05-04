@@ -19,20 +19,42 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/app/*": ["./app/*"],
-      "@/components/*": ["./components/*"],
-      "@/contexts/*": ["./contexts/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/data/*": ["./data/*"],
-      "@/services/*": ["./services/*"],
-      "@/public/*": ["./public/*"],
-      "@/types": ["./types.ts"]
+      "@/*": [
+        "./*"
+      ],
+      "@/app/*": [
+        "./app/*"
+      ],
+      "@/components/*": [
+        "./components/*"
+      ],
+      "@/contexts/*": [
+        "./contexts/*"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ],
+      "@/data/*": [
+        "./data/*"
+      ],
+      "@/services/*": [
+        "./services/*"
+      ],
+      "@/public/*": [
+        "./public/*"
+      ],
+      "@/types": [
+        "./types.ts"
+      ]
     },
     "plugins": [
       {
         "name": "next"
       }
+    ],
+    "types": [
+      "jest",
+      "node"
     ]
   },
   "include": [

@@ -162,30 +162,33 @@ const aseguramientos = {
 
 
 // PRÓXIMAS APERTURAS API
+// NOTA: Este endpoint aún no está implementado en el backend
+// Por ahora devolvemos un array vacío para evitar errores
 const proximasAperturas = {
   getAll: async () => {
-    const response = await axiosInstance.get('/proximasAperturas');
-    return response.data;
+    // TODO: Implementar endpoint en el backend
+    console.warn('proximasAperturas.getAll() no está implementado en el backend');
+    return { results: [] };
   },
 
   getById: async (id) => {
-    const response = await axiosInstance.get(`/proximasAperturas/${id}`);
-    return response.data;
+    console.warn('proximasAperturas.getById() no está implementado en el backend');
+    return null;
   },
 
   create: async (createData) => {
-    const response = await axiosInstance.post('/proximasAperturas', createData);
-    return response.data;
+    console.warn('proximasAperturas.create() no está implementado en el backend');
+    return null;
   },
 
   update: async (id, updateData) => {
-    const response = await axiosInstance.put(`/proximasAperturas/${id}`, updateData);
-    return response.data;
+    console.warn('proximasAperturas.update() no está implementado en el backend');
+    return null;
   },
 
   delete: async (id) => {
-    const response = await axiosInstance.delete(`/proximasAperturas/${id}`);
-    return response.data;
+    console.warn('proximasAperturas.delete() no está implementado en el backend');
+    return null;
   },
 };
 

@@ -10,12 +10,25 @@ export class CircuitosController {
   constructor(private readonly circuitosService: CircuitosService) {}
 
   @MessagePattern('circuitos.findAll')
-  findAll(@Payload() payload: { page?: number; pageSize?: number; apagable?: boolean; bloque?: string }) {
+  findAll(
+    @Payload()
+    payload: {
+      page?: number;
+      pageSize?: number;
+      apagable?: boolean;
+      bloque?: string;
+    },
+  ) {
     const page = payload?.page || 1;
     const pageSize = payload?.pageSize || 20;
     const skip = (page - 1) * pageSize;
     const take = pageSize;
-    return this.circuitosService.findAll(take, skip, payload?.apagable, payload?.bloque);
+    return this.circuitosService.findAll(
+      take,
+      skip,
+      payload?.apagable,
+      payload?.bloque,
+    );
   }
 
   @MessagePattern('circuitos.findAllWithConsumption')
@@ -24,7 +37,9 @@ export class CircuitosController {
   }
 
   @MessagePattern('circuitos.findWithConsumptionAndApagones')
-  async findWithConsumptionAndApagones(@Payload() payload: FindConsumptionByDateDto) {
+  async findWithConsumptionAndApagones(
+    @Payload() payload: FindConsumptionByDateDto,
+  ) {
     return this.circuitosService.findWithConsumptionAndApagones(payload);
   }
 

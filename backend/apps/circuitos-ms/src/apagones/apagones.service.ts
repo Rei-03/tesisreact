@@ -15,7 +15,7 @@ export class ApagonesService {
     const pageSize = payload.pageSize || 20;
     const skip = (page - 1) * pageSize;
     const take = pageSize;
-    
+
     const { records, total } = await this.apagonesRepo.findAll(take, skip);
     const totalPages = Math.ceil(total / take);
 
@@ -90,7 +90,12 @@ export class ApagonesService {
     const pageSize = payload.pageSize || 20;
     const skip = (page - 1) * pageSize;
     const take = pageSize;
-    return this.apagonesRepo.findByDateRange(payload.fechaInicio, payload.fechaFin, take, skip);
+    return this.apagonesRepo.findByDateRange(
+      payload.fechaInicio,
+      payload.fechaFin,
+      take,
+      skip,
+    );
   }
 
   /**

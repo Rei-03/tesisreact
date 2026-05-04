@@ -39,7 +39,9 @@ export class AuthService {
     const { email, name, password, role = UserRole.USER } = registerDto;
 
     // Verificar si el usuario ya existe
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       return {
         success: false,
@@ -212,7 +214,9 @@ export class AuthService {
       const payload = this.jwtService.verify<JwtPayload>(token);
 
       // Buscar el usuario para confirmar que existe y está activo
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user || !user.isActive) {
         return {
           success: false,
@@ -241,7 +245,11 @@ export class AuthService {
   }
 
   // Métodos auxiliares
-  private generateTokens(userId: string, email: string, role: UserRole): AuthTokens {
+  private generateTokens(
+    userId: string,
+    email: string,
+    role: UserRole,
+  ): AuthTokens {
     const payload: JwtPayload = {
       sub: userId,
       email,
@@ -280,7 +288,9 @@ export class AuthService {
       const payload = this.jwtService.verify<JwtPayload>(refreshToken);
 
       // Buscar el usuario
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user || !user.isActive) {
         return {
           success: false,

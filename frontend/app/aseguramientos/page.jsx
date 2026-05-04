@@ -122,7 +122,6 @@ export default function AseguramientosPage() {
   });
   const [errorForm, setErrorForm] = useState(null);
 
-  // HANDLERS DEL FORMULARIO
   const handleSubmitForm = async (e) => {
     e.preventDefault();
     setErrorForm(null);
