@@ -11,7 +11,6 @@ import { apiClient } from "@/lib/api/apiClient";
 import { generarRotacion } from "@/lib/services/rotacionService";
 import RotacionModal from "@/components/RotacionModal";
 import {
-  calcularTotalClientes,
   calcularMWPorBloque,
 } from "@/lib/utils/circuitUtils";
 import { getToday } from "@/lib/utils/dateUtils";
@@ -23,7 +22,9 @@ import DashboardAseguramientosTable from "@/components/dashboard/DashboardAsegur
 
 export default function DashboardPage() {
   const [circuitos, setCircuitos] = useState([]);
+  const [totalAseguramientosHoy, setTotalAseguramientosHoy] = useState(0);
   const [aseguramientos, setAseguramientos] = useState([]);
+  const [circuitosApagados, setCircuitosApagados] = useState([]);
   const [proxAperturas, setProxAperturas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [modalRotacionAbierto, setModalRotacionAbierto] = useState(false);
@@ -37,14 +38,34 @@ export default function DashboardPage() {
     try {
       setCargando(true);
       const hoy = getToday();
-      const [circ, asg, prox] = await Promise.all([
+      const [circ, asgCount, asgListado, abiertos, prox] = await Promise.all([
         apiClient.circuitos.getApagables(),
-        apiClient.aseguramientos.getByFecha(hoy),
+        apiClient.aseguramientos.countByFecha(hoy),
+        apiClient.aseguramientos.getAll(1, 5),
+        apiClient.apagones.getOpen(),
         apiClient.proximasAperturas.getAll(),
       ]);
+
+      const abiertosRaw = (abiertos?.results || abiertos) || [];
+      const abiertosArray = Array.isArray(abiertosRaw) ? abiertosRaw : [];
+
+      // Evita inflar la métrica cuando llegan múltiples registros del mismo circuito.
+      const abiertosPorCircuito = Array.from(
+        new Map(
+          abiertosArray.map((item, index) => [
+            item?.idCircuitoP != null
+              ? `circuito-${item.idCircuitoP}`
+              : `apagon-${item?.idApagon ?? index}`,
+            item,
+          ])
+        ).values()
+      );
+
       // Extraer arrays correctamente de la respuesta de la API
       setCircuitos((circ?.results || circ) || []);
-      setAseguramientos((asg?.results || asg) || []);
+      setTotalAseguramientosHoy(Number(asgCount?.count || 0));
+      setAseguramientos((asgListado?.results || asgListado) || []);
+      setCircuitosApagados(abiertosPorCircuito);
       setProxAperturas((prox?.results || prox) || []);
     } catch (err) {
       console.error("Error loading dashboard data:", err);
@@ -80,10 +101,7 @@ export default function DashboardPage() {
   };
 
   // CALCULAR MÉTRICAS
-  const totalCircuitosApagables = circuitos.length;
-  const totalAseguramientosHoy = aseguramientos.length;
-  const totalMWAsegurado = aseguramientos.reduce((sum, a) => sum + (a.mw || 0), 0);
-  const totalClientes = calcularTotalClientes(circuitos);
+  const totalCircuitosApagados = circuitosApagados.length;
   const mwPorBloque = calcularMWPorBloque(proxAperturas);
 
   // DATOS PARA GRÁFICOS
@@ -111,7 +129,6 @@ export default function DashboardPage() {
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-3xl font-bold text-slate-800">Panel de Control</h2>
-          <p className="text-slate-500 text-sm mt-1">Provincia: CFG · Estado del sistema en tiempo real</p>
         </div>
         <button
           onClick={() => setModalRotacionAbierto(true)}
@@ -137,9 +154,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardMetricCard
           icon={Grid3x3}
-          title="Circuitos Apagables"
-          value={totalCircuitosApagables}
-          subtitle={`${totalClientes.toLocaleString()} clientes`}
+          title="Circuitos Apagados"
+          value={totalCircuitosApagados}
+          subtitle="Con apagón sin hora de cierre"
           bgColor="border-blue-500"
           iconBgColor="bg-blue-100 text-blue-600"
         />
@@ -147,7 +164,7 @@ export default function DashboardPage() {
           icon={Shield}
           title="Aseguramientos Hoy"
           value={totalAseguramientosHoy}
-          subtitle={`${totalMWAsegurado.toFixed(1)} MW protegidos`}
+          subtitle="Conteo del día"
           bgColor="border-green-500"
           iconBgColor="bg-green-100 text-green-600"
         />

@@ -24,6 +24,11 @@ export class AseguramientosController {
     return this.aseguramientosService.findAll(take, skip, fecha, circuitoP);
   }
 
+  @MessagePattern('aseguramientos.countByFecha')
+  countByFecha(@Payload() payload: { fecha?: string } = {}) {
+    return this.aseguramientosService.countByFecha(payload?.fecha);
+  }
+
   @MessagePattern('aseguramientos.findOne')
   findOne(@Payload() data: { id: number }) {
     return this.aseguramientosService.findOne(data.id);

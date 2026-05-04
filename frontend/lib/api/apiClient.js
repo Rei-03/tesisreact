@@ -91,17 +91,23 @@ const circuitos = {
     if (bloque !== undefined) params.append('bloque', bloque);
     
     const response = await axiosInstance.get(`/circuitos?${params}`);
-    return response.data;
+    return response.data?.data || response.data;
   },
 
-  getApagables: async () => {
-    const response = await axiosInstance.get('/circuitos', { params: { apagable: true } });
-    return response.data;
+  getApagables: async (page = 1, pageSize = 500) => {
+    const response = await axiosInstance.get('/circuitos', {
+      params: {
+        page,
+        pageSize,
+        apagable: true,
+      },
+    });
+    return response.data?.data || response.data;
   },
 
   getById: async (id) => {
     const response = await axiosInstance.get(`/circuitos/${id}`);
-    return response.data;
+    return response.data?.data || response.data;
   },
 
   update: async (id, updateData) => {
@@ -126,7 +132,7 @@ const aseguramientos = {
     if (fecha !== undefined) params.append('fecha', fecha);
     
     const response = await axiosInstance.get(`/rotaciones/aseguramientos?${params}`);
-    return response.data;
+    return response.data?.data || response.data;
   },
 
   getByFecha: async (fecha, page = 1, pageSize = 10) => {
@@ -136,12 +142,20 @@ const aseguramientos = {
     params.append('fecha', fecha);
     
     const response = await axiosInstance.get(`/rotaciones/aseguramientos?${params}`);
-    return response.data;
+    return response.data?.data || response.data;
+  },
+
+  countByFecha: async (fecha) => {
+    const params = new URLSearchParams();
+    if (fecha !== undefined) params.append('fecha', fecha);
+
+    const response = await axiosInstance.get(`/rotaciones/aseguramientos/count?${params}`);
+    return response.data?.data || response.data;
   },
 
   getById: async (id) => {
     const response = await axiosInstance.get(`/rotaciones/aseguramientos/${id}`);
-    return response.data;
+    return response.data?.data || response.data;
   },
 
   create: async (createData) => {
@@ -157,6 +171,47 @@ const aseguramientos = {
   delete: async (id) => {
     const response = await axiosInstance.delete(`/rotaciones/aseguramientos/${id}`);
     return response.data;
+  },
+};
+
+// APAGONES API
+const apagones = {
+  getAll: async (page = 1, pageSize = 20) => {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('pageSize', pageSize);
+
+    const response = await axiosInstance.get(`/apagones?${params}`);
+    return response.data?.data || response.data;
+  },
+
+  getOpen: async (page = 1, pageSize = 200) => {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('pageSize', pageSize);
+
+    const response = await axiosInstance.get(`/apagones/open?${params}`);
+    const payload = response.data?.data || response.data;
+
+    console.log('[apiClient] apagones.getOpen -> payload', {
+      page,
+      pageSize,
+      keys: payload ? Object.keys(payload) : [],
+      resultsCount: Array.isArray(payload?.results)
+        ? payload.results.length
+        : Array.isArray(payload)
+          ? payload.length
+          : null,
+      meta: payload?.meta || null,
+      raw: response.data,
+    });
+
+    return payload;
+  },
+
+  getById: async (id) => {
+    const response = await axiosInstance.get(`/apagones/${id}`);
+    return response.data?.data || response.data;
   },
 };
 
@@ -210,6 +265,7 @@ const rotaciones = {
 export const apiClient = {
   circuitos,
   aseguramientos,
+  apagones,
   proximasAperturas,
   rotaciones,
 };

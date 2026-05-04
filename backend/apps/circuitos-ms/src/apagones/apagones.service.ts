@@ -74,12 +74,36 @@ export class ApagonesService {
   /**
    * Obtiene apagones que aún están abiertos (sin fecha de cierre)
    */
-  findOpenApagones(payload: FindApagonesPaginationDto) {
-    const page = payload.page || 1;
-    const pageSize = payload.pageSize || 20;
+  async findOpenApagones(payload: FindApagonesPaginationDto = {}) {
+    const page = Number(payload.page) > 0 ? Number(payload.page) : 1;
+    const pageSize = Number(payload.pageSize) > 0 ? Number(payload.pageSize) : 20;
     const skip = (page - 1) * pageSize;
     const take = pageSize;
-    return this.apagonesRepo.findOpenApagones(take, skip);
+
+    const { records, total } = await this.apagonesRepo.findOpenApagones(
+      take,
+      skip,
+    );
+    const totalPages = Math.ceil(total / take);
+
+    console.log('[apagones-ms] findOpenApagones -> response', {
+      page,
+      pageSize: take,
+      total,
+      totalPages,
+      resultsCount: records.length,
+      firstResult: records[0] || null,
+    });
+
+    return {
+      results: records,
+      meta: {
+        page,
+        totalPages,
+        total,
+        pageSize: take,
+      },
+    };
   }
 
   /**

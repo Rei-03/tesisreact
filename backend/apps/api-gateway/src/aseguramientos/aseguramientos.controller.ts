@@ -34,6 +34,15 @@ export class AseguramientosController {
     );
   }
 
+  @Get('count')
+  countByFecha(@Query('fecha') fecha?: string) {
+    return firstValueFrom(
+      this.client.send('aseguramientos.countByFecha', {
+        fecha,
+      }),
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return firstValueFrom(

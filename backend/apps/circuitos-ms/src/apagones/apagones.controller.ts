@@ -47,7 +47,7 @@ export class ApagonesController {
   }
 
   @MessagePattern('apagones.findOpen')
-  findOpenApagones(@Payload() payload: FindApagonesPaginationDto) {
+  findOpenApagones(@Payload() payload: FindApagonesPaginationDto = {}) {
     return this.apagonesService.findOpenApagones(payload);
   }
 

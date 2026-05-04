@@ -144,22 +144,44 @@ export class ApagonesRepository {
    * Obtiene apagones abiertos (sin fecha de cierre)
    */
   async findOpenApagones(take = 20, skip = 0) {
+    const countResult = await this.db.request().query(`
+                WITH OpenApagones AS (
+                    SELECT idCircuitoP, MAX(idApagon) AS maxApagonId
+                    FROM ap_apagon
+                    WHERE FechaCierre IS NULL AND idCircuitoP IS NOT NULL
+                    GROUP BY idCircuitoP
+                )
+                SELECT COUNT(*) AS total FROM OpenApagones
+            `);
+
+    const total = countResult.recordset[0]?.total || 0;
+
     const result = await this.db
       .request()
       .input('take', sql.Int, take)
       .input('skip', sql.Int, skip).query(`
-                SELECT * FROM (
-                    SELECT idApagon, idProv, FechaRetiro, FechaCierre, idCircuitoP, 
-                           MWAfectados, Observaciones, Id_Usuario, Id_UsuarioCerrado, AbiertoPor,
-                           ROW_NUMBER() OVER (ORDER BY FechaRetiro DESC) AS RowNum
+                WITH OpenApagones AS (
+                    SELECT idCircuitoP, MAX(idApagon) AS maxApagonId
                     FROM ap_apagon
-                    WHERE FechaCierre IS NULL
+                    WHERE FechaCierre IS NULL AND idCircuitoP IS NOT NULL
+                    GROUP BY idCircuitoP
+                )
+                SELECT * FROM (
+                    SELECT ap.idApagon, ap.idProv, ap.FechaRetiro, ap.FechaCierre, ap.idCircuitoP,
+                           ap.MWAfectados, ap.Observaciones, ap.Id_Usuario, ap.Id_UsuarioCerrado, ap.AbiertoPor,
+                           ROW_NUMBER() OVER (ORDER BY ap.FechaRetiro DESC) AS RowNum
+                    FROM ap_apagon ap
+                    INNER JOIN OpenApagones oa ON ap.idCircuitoP = oa.idCircuitoP
+                        AND ap.idApagon = oa.maxApagonId
                 ) AS ResultWithRows
                 WHERE RowNum > @skip AND RowNum <= (@skip + @take)
                 ORDER BY FechaRetiro DESC
             `);
 
-    return result.recordset;
+    return {
+      records: result.recordset,
+      total,
+    };
   }
 
   /**

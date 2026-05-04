@@ -67,14 +67,6 @@ export default function LayoutClientWrapper({ children }) {
         {/* Header Superior con Datos de Resumen (TU HEADER) */}
         <header className="h-16 bg-white border-b flex items-center justify-between px-8 sticky top-0 z-10">
           <div className="flex gap-8">
-            <div>
-              <span className="text-xs text-slate-500 block">Déficit Actual</span>
-              <span className="font-bold text-red-600">45.2 MW</span>
-            </div>
-            <div>
-              <span className="text-xs text-slate-500 block">Estado Sistema</span>
-              <span className="font-bold text-orange-500">Crítico</span>
-            </div>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium">

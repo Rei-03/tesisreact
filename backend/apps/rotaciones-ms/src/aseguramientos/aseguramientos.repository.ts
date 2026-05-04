@@ -140,6 +140,20 @@ export class AseguramientosRepository {
         };
     }
 
+    async countByFecha(fecha: Date) {
+        const result = await this.db
+            .request()
+            .input('fecha', sql.DateTime, fecha)
+            .query(`
+                SELECT COUNT(*) as total
+                FROM ap_Aseguramientos
+                WHERE CAST(fechaInicial AS DATE) <= CAST(@fecha AS DATE)
+                  AND CAST(fechaFinal AS DATE) >= CAST(@fecha AS DATE)
+            `);
+
+        return result.recordset[0]?.total || 0;
+    }
+
     async create(data: {
         id_CircuitoP: number;
         CircuitoP: string;

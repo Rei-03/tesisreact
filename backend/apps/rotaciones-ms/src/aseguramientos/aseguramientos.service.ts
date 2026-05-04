@@ -49,6 +49,19 @@ export class AseguramientosService {
     };
   }
 
+  async countByFecha(fecha?: string) {
+    const fechaReferencia = fecha
+      ? new Date(`${fecha}T00:00:00`)
+      : new Date();
+
+    const total = await this.aseguramientosRepo.countByFecha(fechaReferencia);
+
+    return {
+      count: total,
+      fecha: fecha || fechaReferencia.toISOString().split('T')[0],
+    };
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} aseguramiento`;
   }
