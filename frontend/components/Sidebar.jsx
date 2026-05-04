@@ -3,7 +3,6 @@ import { useAuth } from "@/contexts/AuthContext"; // Importamos el hook de auth
 import {
   FileBarChart,
   LayoutDashboard,
-  Settings,
   ShieldCheck,
   Users,
   Zap,
@@ -36,13 +35,6 @@ export default function Sidebar() {
       href: "/usuarios",
     });
   }
-
-  // Agregamos configuración al final
-  menuItems.push({
-    name: "Configuración",
-    icon: <Settings size={20} />,
-    href: "/configuracion",
-  });
 
   return (
     <div className="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 p-4 shadow-xl">

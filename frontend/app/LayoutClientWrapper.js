@@ -5,16 +5,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LogOut } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { logoutUser } from '@/lib/services/authService';
 
 export default function LayoutClientWrapper({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading, logout, user } = useAuth();
   const isLoginPage = pathname === '/loguin' || pathname === '/login';
 
-  const handleLogout = () => {
-    logout();
-    router.push('/loguin');
+  const handleLogout = async () => {
+    try {
+      // Llamar al servicio de logout (limpia cookies en servidor)
+      await logoutUser();
+    } catch (error) {
+      console.error('Error al hacer logout:', error);
+    } finally {
+      // Limpiar contexto local
+      logout();
+      router.push('/loguin');
+    }
   };
 
   useEffect(() => {
@@ -68,8 +77,17 @@ export default function LayoutClientWrapper({ children }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium">Operador: B. Castellano</span>
-            <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-xs text-slate-600 font-bold">BC</div>
+            <span className="text-sm font-medium">
+              Operador: {user?.nombre || user?.name || 'Usuario'}
+            </span>
+            <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-xs text-slate-600 font-bold">
+              {(user?.nombre || user?.name || 'U')
+                .split(' ')
+                .map((word) => word[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2)}
+            </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"

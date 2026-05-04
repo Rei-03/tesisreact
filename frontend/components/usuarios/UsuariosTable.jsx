@@ -12,8 +12,8 @@ export default function UsuariosTable({
       return;
     }
 
-    if (window.confirm(`¿Eliminar usuario "${usuario.nombre}"?`)) {
-      onDeleteUser(usuario.id, usuario.nombre);
+    if (window.confirm(`¿Eliminar usuario "${usuario.name}"?`)) {
+      onDeleteUser(usuario.id, usuario.name);
     }
   };
 
@@ -27,7 +27,7 @@ export default function UsuariosTable({
           <thead className="bg-slate-800 text-white">
             <tr>
               <th className="px-6 py-3 font-semibold">Nombre</th>
-              <th className="px-6 py-3 font-semibold">Login</th>
+              <th className="px-6 py-3 font-semibold">Email</th>
               <th className="px-6 py-3 font-semibold">Rol</th>
               <th className="px-6 py-3 font-semibold text-center">Acciones</th>
             </tr>
@@ -35,15 +35,15 @@ export default function UsuariosTable({
           <tbody className="divide-y divide-slate-200">
             {usuarios.map((usuario) => (
               <tr key={usuario.id} className="hover:bg-slate-50">
-                <td className="px-6 py-3 font-semibold">{usuario.nombre}</td>
-                <td className="px-6 py-3 font-mono text-sm text-slate-600">{usuario.login}</td>
+                <td className="px-6 py-3 font-semibold">{usuario.name}</td>
+                <td className="px-6 py-3 font-mono text-sm text-slate-600">{usuario.email}</td>
                 <td className="px-6 py-3">
                   <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${
-                    usuario.rol === "admin" ? "bg-red-100 text-red-700" :
-                    usuario.rol === "supervisor" ? "bg-yellow-100 text-yellow-700" :
+                    usuario.role === "admin" ? "bg-red-100 text-red-700" :
+                    usuario.role === "supervisor" ? "bg-yellow-100 text-yellow-700" :
                     "bg-blue-100 text-blue-700"
                   }`}>
-                    {usuario.rol}
+                    {usuario.role}
                   </span>
                   {currentUserId === usuario.id && (
                     <span className="ml-2 text-xs text-slate-500">(Tú)</span>

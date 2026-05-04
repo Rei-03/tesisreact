@@ -6,15 +6,31 @@ import { AseguramientosRepository } from './aseguramientos.repository';
 @Injectable()
 export class AseguramientosService {
   constructor(private readonly aseguramientosRepo: AseguramientosRepository) { }
-  create(createAseguramientoDto: CreateAseguramientoDto) {
-    return 'This action adds a new aseguramiento';
+  async create(createAseguramientoDto: CreateAseguramientoDto) {
+    return await this.aseguramientosRepo.create({
+      id_CircuitoP: createAseguramientoDto.id_CircuitoP,
+      CircuitoP: createAseguramientoDto.CircuitoP,
+      fechaInicial: createAseguramientoDto.fechaInicial,
+      fechaFinal: createAseguramientoDto.fechaFinal,
+      Observaciones: createAseguramientoDto.Observaciones,
+      tipo: createAseguramientoDto.tipo,
+      mw: createAseguramientoDto.mw,
+    });
   }
 
-  async findAll(take?: number, skip?: number, fecha?: string) {
-    const defaultFecha = fecha || new Date('2024-05-30 05:00:00.000').toISOString();
+  async findAll(take?: number, skip?: number, fecha?: string, circuitoP?: string) {
+    // Si hay fecha, convertirla correctamente. Si no, será null para mostrar historial completo
+    let fechaFiltro: Date | null = null;
+    
+    if (fecha) {
+      // Convertir fecha ISO (YYYY-MM-DD) a Date correctamente
+      const partes = fecha.split('T')[0].split('-');
+      fechaFiltro = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+    }
+
     const { records, total } = await this.aseguramientosRepo.findMany({ 
       select: {}, 
-      where: { fecha: new Date(defaultFecha) },
+      where: { fecha: fechaFiltro, circuitoP },
       take,
       skip
     });

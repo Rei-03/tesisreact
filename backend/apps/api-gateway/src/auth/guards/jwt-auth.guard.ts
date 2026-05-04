@@ -10,16 +10,19 @@ import { Request } from 'express';
 import type { Redis } from 'ioredis';
 
 /**
- * JWT Authentication Guard - Local + Redis
+ * JWT Authentication Guard - Local + Redis + httpOnly Cookies
  *
  * Valida JWT localmente sin llamar a auth-ms:
- * 1. Verifica firma JWT (localmente)
- * 2. Verifica si token está en blacklist Redis (logout)
- * 3. Extrae datos del usuario del token
+ * 1. Busca token en cookies (httpOnly) primero
+ * 2. Si no lo encuentra, busca en Authorization header (fallback)
+ * 3. Verifica firma JWT (localmente)
+ * 4. Verifica si token está en blacklist Redis (logout)
+ * 5. Extrae datos del usuario del token
  *
  * Ventajas:
  * - Super rápido (no hay overhead de NATS)
  * - Logout inmediato (Redis blacklist)
+ * - Cookies httpOnly protegidas contra XSS
  * - Escalable horizontalmente
  *
  * Uso:
@@ -37,20 +40,26 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const authHeader = request.headers.authorization;
+    let token: string | null = null;
 
-    // Validar que el header Authorization esté presente
-    if (!authHeader) {
+    // 1️⃣ Intentar obtener token de la cookie httpOnly (prioritario)
+    if (request.cookies?.accessToken) {
+      token = request.cookies.accessToken;
+    }
+    // 2️⃣ Fallback: Intentar obtener token del header Authorization
+    else if (request.headers.authorization) {
+      const authHeader = request.headers.authorization;
+      const parts = authHeader.split(' ');
+      
+      if (parts.length === 2 && parts[0] === 'Bearer') {
+        token = parts[1];
+      }
+    }
+
+    // Si no hay token en ningún lugar, lanzar error
+    if (!token) {
       throw new UnauthorizedException('Token no proporcionado');
     }
-
-    // Extraer el token del formato "Bearer <token>"
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      throw new UnauthorizedException('Formato de token inválido');
-    }
-
-    const token = parts[1];
 
     try {
       // 1️⃣ Verificar firma JWT localmente (muy rápido)

@@ -89,8 +89,12 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
-    // Buscar usuario por email
-    const user = await this.userRepository.findOne({ where: { email } });
+    // Buscar usuario por email - incluir password explícitamente
+    const user = await this.userRepository.findOne({ 
+      where: { email },
+      select: ['id', 'email', 'name', 'password', 'role', 'isActive', 'createdAt', 'updatedAt']
+    });
+    
     if (!user) {
       return {
         success: false,
@@ -99,12 +103,39 @@ export class AuthService {
       };
     }
 
-    // Verificar contraseña
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    // Validar que tenga contraseña
+    if (!user.password) {
       return {
         success: false,
         message: 'Credenciales inválidas',
+        data: null,
+      };
+    }
+
+    console.log('Usuario encontrado para login:', {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    });
+
+    console.log('datos de login recibidos:', { email, password: '[PROTECTED]' });
+
+    // Verificar contraseña
+    try {
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return {
+          success: false,
+          message: 'Credenciales inválidas',
+          data: null,
+        };
+      }
+    } catch (error) {
+      console.error('Error comparando contraseña:', error);
+      return {
+        success: false,
+        message: 'Error validando credenciales',
         data: null,
       };
     }
@@ -298,7 +329,9 @@ export class AuthService {
     const page = skip / take + 1;
 
     return {
-      results: users,
+      success: true,
+      message: 'Usuarios obtenidos exitosamente',
+      data: users,
       meta: {
         page: Math.floor(page),
         totalPages,

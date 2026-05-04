@@ -1,20 +1,34 @@
 import { UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function UsuariosForm({ 
   onSubmit, 
   loading, 
   loginUnico, 
   onValidarLogin,
-  usuarios = []
+  usuarios = [],
+  resetTrigger = 0  // Prop para resetear el formulario desde fuera
 }) {
   const [formData, setFormData] = useState({
-    nombre: "",
-    login: "",
+    name: "",
+    email: "",
     password: "",
     confirmPassword: "",
-    rol: "operador",
+    role: "operador",
   });
+
+  // Resetear formulario cuando resetTrigger cambia
+  useEffect(() => {
+    if (resetTrigger > 0) {
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "operador",
+      });
+    }
+  }, [resetTrigger]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,7 +37,7 @@ export default function UsuariosForm({
       [name]: value
     }));
 
-    if (name === "login") {
+    if (name === "email") {
       onValidarLogin(value, usuarios);
     }
   };
@@ -48,10 +62,10 @@ export default function UsuariosForm({
           </label>
           <input
             type="text"
-            name="nombre"
+            name="name"
             placeholder="Ej: Juan Pérez"
             className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.nombre}
+            value={formData.name}
             onChange={handleChange}
             disabled={loading}
             required
@@ -60,22 +74,22 @@ export default function UsuariosForm({
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
-            Login (Usuario) *
+            Email *
           </label>
           <div className="relative">
             <input
-              type="text"
-              name="login"
-              placeholder="Ej: jperez"
+              type="email"
+              name="email"
+              placeholder="Ej: jperez@example.com"
               className={`w-full p-2 border rounded-lg outline-none focus:ring-2 ${
                 loginUnico ? "focus:ring-blue-500" : "border-red-500 focus:ring-red-500"
               }`}
-              value={formData.login}
+              value={formData.email}
               onChange={handleChange}
               disabled={loading}
               required
             />
-            {formData.login && (
+            {formData.email && (
               <span className={`text-xs absolute right-2 top-2.5 ${loginUnico ? "text-green-600" : "text-red-600"}`}>
                 {loginUnico ? "✓ Disponible" : "✗ Existe"}
               </span>
@@ -120,8 +134,8 @@ export default function UsuariosForm({
             Rol *
           </label>
           <select
-            name="rol"
-            value={formData.rol}
+            name="role"
+            value={formData.role}
             onChange={handleChange}
             disabled={loading}
             className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"

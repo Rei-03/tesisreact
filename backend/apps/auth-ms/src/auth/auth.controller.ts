@@ -27,6 +27,12 @@ export class AuthController {
 
   @MessagePattern('auth.login')
   async login(@Payload() loginDto: LoginDto) {
+    console.log('🔐 [auth-ms] Recibiendo login:', { 
+      email: loginDto.email, 
+      password: '***',
+      type: typeof loginDto,
+      keys: Object.keys(loginDto)
+    });
     return this.authService.login(loginDto);
   }
 

@@ -1,26 +1,39 @@
 // lib/api/apiClient.js
 /**
  * Cliente API centralizado para todas las llamadas al backend
- * API Gateway: http://localhost:3001
+ * API Gateway: ${process.env.NEXT_PUBLIC_API_URL}
+ * 
+ * SEGURIDAD:
+ * - Usa httpOnly cookies para tokens (protegido contra XSS)
+ * - Las cookies se envían automáticamente con credentials: 'include'
+ * - No almacena tokens en localStorage (más seguro)
  */
 
 import axios from 'axios';
 
 // Crear instancia de axios con configuración base
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
   },
+  // IMPORTANTE: Enviar cookies automáticamente en cada request
+  withCredentials: true,
 });
 
-// Interceptor para agregar token y manejo de errores
+// Interceptor para agregar token fallback y manejo de errores
 axiosInstance.interceptors.request.use(
   (config) => {
+    console.log(`📤 [${config.method?.toUpperCase()}] ${config.baseURL}${config.url}`, {
+      data: config.data,
+      headers: config.headers,
+    });
+    
+    // Las cookies httpOnly se envían automáticamente con withCredentials: true
+    // Pero si por alguna razón hay un token en localStorage (fallback), lo seguimos soportando
     if (typeof window !== 'undefined') {
-      // Agregar token de autenticación si está disponible
       const token = localStorage.getItem('token');
-      if (token) {
+      if (token && !config.headers.Authorization) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
@@ -37,6 +50,25 @@ axiosInstance.interceptors.response.use(
     const statusCode = error.response?.status;
     
     console.error(`API Error [${statusCode}]:`, message);
+    
+    // Si es 401 (no autorizado), la sesión es inválida
+    if (statusCode === 401) {
+      if (typeof window !== 'undefined') {
+        // Limpiar datos locales
+        localStorage.removeItem('userData');
+        localStorage.removeItem('token');
+        localStorage.removeItem('isAuthenticated');
+        
+        // Redirigir a login SOLO si no estamos ya en la página de login
+        const isLoginPage = window.location.pathname === '/loguin' || window.location.pathname === '/login';
+        if (!isLoginPage) {
+          // Usar un pequeño delay para evitar múltiples redirecciones
+          setTimeout(() => {
+            window.location.href = '/loguin';
+          }, 500);
+        }
+      }
+    }
     
     // Lanzar error personalizado
     throw {
@@ -86,35 +118,44 @@ const circuitos = {
 
 // ASEGURAMIENTOS API
 const aseguramientos = {
-  getAll: async () => {
-    const response = await axiosInstance.get('/aseguramientos');
+  getAll: async (page = 1, pageSize = 10, fecha = undefined) => {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('pageSize', pageSize);
+    
+    if (fecha !== undefined) params.append('fecha', fecha);
+    
+    const response = await axiosInstance.get(`/rotaciones/aseguramientos?${params}`);
     return response.data;
   },
 
-  getByFecha: async (fecha) => {
-    const response = await axiosInstance.get('/aseguramientos', { 
-      params: { fecha } 
-    });
+  getByFecha: async (fecha, page = 1, pageSize = 10) => {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('pageSize', pageSize);
+    params.append('fecha', fecha);
+    
+    const response = await axiosInstance.get(`/rotaciones/aseguramientos?${params}`);
     return response.data;
   },
 
   getById: async (id) => {
-    const response = await axiosInstance.get(`/aseguramientos/${id}`);
+    const response = await axiosInstance.get(`/rotaciones/aseguramientos/${id}`);
     return response.data;
   },
 
   create: async (createData) => {
-    const response = await axiosInstance.post('/aseguramientos', createData);
+    const response = await axiosInstance.post('/rotaciones/aseguramientos', createData);
     return response.data;
   },
 
   update: async (id, updateData) => {
-    const response = await axiosInstance.put(`/aseguramientos/${id}`, updateData);
+    const response = await axiosInstance.put(`/rotaciones/aseguramientos/${id}`, updateData);
     return response.data;
   },
 
   delete: async (id) => {
-    const response = await axiosInstance.delete(`/aseguramientos/${id}`);
+    const response = await axiosInstance.delete(`/rotaciones/aseguramientos/${id}`);
     return response.data;
   },
 };

@@ -21,6 +21,7 @@ import { env } from './config/env';
       entities: [User],
       autoLoadEntities: true,
       synchronize: env.DB_SYNCHRONIZE === 'true',
+      dropSchema: env.NODE_ENV === 'development', // 🔄 Recrea el schema en desarrollo
       logging: env.DB_LOGGING === 'true',
     }),
     TypeOrmModule.forFeature([User]),

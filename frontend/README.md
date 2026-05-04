@@ -32,7 +32,7 @@ npm install
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la aplicación.
+Abre [http://localhost:4321](http://localhost:4321) en tu navegador para ver la aplicación.
 
 ### Build Producción
 

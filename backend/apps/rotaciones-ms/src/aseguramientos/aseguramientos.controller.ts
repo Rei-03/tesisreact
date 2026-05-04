@@ -14,13 +14,14 @@ export class AseguramientosController {
   }
 
   @MessagePattern('aseguramientos.findAll')
-  findAll(@Payload() payload: { page?: number; pageSize?: number; fecha?: string }) {
+  findAll(@Payload() payload: { page?: number; pageSize?: number; fecha?: string; circuitoP?: string }) {
     const page = payload?.page;
     const pageSize = payload?.pageSize;
     const skip = page && pageSize ? (page - 1) * pageSize : undefined;
     const take = pageSize;
     const fecha = payload?.fecha;
-    return this.aseguramientosService.findAll(take, skip, fecha);
+    const circuitoP = payload?.circuitoP;
+    return this.aseguramientosService.findAll(take, skip, fecha, circuitoP);
   }
 
   @MessagePattern('aseguramientos.findOne')

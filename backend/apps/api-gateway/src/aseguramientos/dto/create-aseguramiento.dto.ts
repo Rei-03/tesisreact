@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer'
-import { IsNumber, IsPositive, IsSemVer, IsString, Min } from 'class-validator'
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator'
 
 export class CreateAseguramientoDto {
     @IsNumber()
@@ -7,7 +7,7 @@ export class CreateAseguramientoDto {
     id_CircuitoP: number
     
     @IsString()
-    circuitoP: string
+    CircuitoP: string
     
     @Type(() => Date)
     fechaInicial: Date
@@ -16,12 +16,12 @@ export class CreateAseguramientoDto {
     fechaFinal: Date
     
     @IsString()
-    observaciones: string
+    Observaciones: string
     
     @IsString()
     tipo: string
     
     @IsNumber()
-    @Min(0)
-    mw: number
+    @IsOptional()
+    mw?: number
 }

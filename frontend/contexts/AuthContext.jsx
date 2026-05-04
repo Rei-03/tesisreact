@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { getStoredUserData, validateSession } from "@/lib/services/authService";
 
 const AuthContext = createContext(null);
 
@@ -9,48 +10,48 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Verificar si hay una sesión guardada en localStorage
-    const authStatus = localStorage.getItem("isAuthenticated");
-    const userData = localStorage.getItem("userData");
-    
-    if (authStatus === "true") {
-      setIsAuthenticated(true);
-      if (userData) {
-        try {
-          setUser(JSON.parse(userData));
-        } catch (e) {
-          console.error("Error parsing user data:", e);
+    // Verificar sesión: primero intenta validar con el backend
+    const verifySession = async () => {
+      try {
+        // Intentar validar con el backend (verifica que el token en cookies sea válido)
+        const userData = await validateSession();
+        
+        if (userData) {
+          setIsAuthenticated(true);
+          setUser(userData);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
         }
+      } catch (error) {
+        console.warn('Sesión inválida o expirada:', error.message);
+        
+        // Si falla, limpiar datos locales
+        setIsAuthenticated(false);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      // MODO DEMO: Si no hay usuario, crear un admin automáticamente
-      const demoUser = {
-        id: 1,
-        nombre: "Brayan Castellano",
-        login: "bcastellano",
-        rol: "admin",
-      };
-      setIsAuthenticated(true);
-      setUser(demoUser);
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userData", JSON.stringify(demoUser));
-    }
-    setIsLoading(false);
+    };
+
+    verifySession();
   }, []);
 
-  const login = (userData) => {
+  const login = useCallback((userData) => {
     setIsAuthenticated(true);
     setUser(userData);
-    localStorage.setItem("isAuthenticated", "true");
+    // Solo guardar info del usuario, los tokens están en cookies httpOnly del servidor
     localStorage.setItem("userData", JSON.stringify(userData));
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsAuthenticated(false);
     setUser(null);
-    localStorage.removeItem("isAuthenticated");
+    // Limpiar localStorage (cookies se limpian en el servidor)
     localStorage.removeItem("userData");
-  };
+    localStorage.removeItem("token"); // Fallback antiguo
+    localStorage.removeItem("isAuthenticated");
+  }, []);
 
   // Memoizar isAdmin para evitar que se cree una nueva función en cada render
   const isAdmin = useCallback(() => {
@@ -58,7 +59,16 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, user, isAdmin }}>
+    <AuthContext.Provider 
+      value={{ 
+        isAuthenticated, 
+        isLoading, 
+        login, 
+        logout, 
+        user, 
+        isAdmin 
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

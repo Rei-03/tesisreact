@@ -1,30 +1,119 @@
-// app/aseguramientos/page.jsx
 "use client";
-import React, { useState, useEffect } from "react";
-import { AlertCircle, Calendar, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  AlertCircle,
+  Calendar,
+  FileSpreadsheet,
+  ShieldCheck,
+} from "lucide-react";
 import * as XLSX from "xlsx";
+import {
+  obtenerAseguramientos,
+  crearAseguramiento,
+  eliminarAseguramiento,
+} from "@/lib/services/aseguramientosService";
 import { apiClient } from "@/lib/api/apiClient";
-import { getToday, formatDateDisplay, formatDateTimeDisplay } from "@/lib/utils/dateUtils";
+import { formatDateDisplay, formatDateTimeDisplay } from "@/lib/utils/dateUtils";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import AlertMessage from "@/components/shared/AlertMessage";
 import Pagination from "@/components/shared/Pagination";
-import AseguramientosForm from "@/components/aseguramientos/AseguramientosForm";
 import AseguramientosTable from "@/components/aseguramientos/AseguramientosTable";
+import CircuitoAutocomplete from "@/components/shared/CircuitoAutocomplete";
 
 export default function AseguramientosPage() {
   // ESTADOS
   const [aseguramientos, setAseguramientos] = useState([]);
   const [circuitos, setCircuitos] = useState([]);
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [cargando, setCargando] = useState(true);
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(null); // null = historial completo
+  const [cargandoAseguramientos, setCargandoAseguramientos] = useState(true);
+  const [cargandoCircuitos, setCargandoCircuitos] = useState(true);
   const [error, setError] = useState(null);
+  const [exito, setExito] = useState(null);
   const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalAseguramientos, setTotalAseguramientos] = useState(0);
+  const [totalMW, setTotalMW] = useState(0);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [cargando, setCargando] = useState(false);
+  const [eliminando, setEliminando] = useState(null);
+
   const aseguramientosPorPagina = 10;
 
-  // FORM STATE
+  // Función para cargar circuitos (una sola vez)
+  const cargarCircuitos = useCallback(async () => {
+    try {
+      setCargandoCircuitos(true);
+      const datos = await apiClient.circuitos.getApagables();
+      setCircuitos(datos?.results || datos || []);
+    } catch (err) {
+      setError("Error cargando circuitos: " + (err?.message || "Error desconocido"));
+    } finally {
+      setCargandoCircuitos(false);
+    }
+  }, []);
+
+  // Función para cargar aseguramientos con paginación
+  const cargarAseguramientos = useCallback(async () => {
+    try {
+      setCargandoAseguramientos(true);
+      setError(null);
+
+      // Convertir fecha a ISO solo si está seleccionada
+      let fechaISO = undefined;
+      if (fechaSeleccionada) {
+        if (fechaSeleccionada instanceof Date) {
+          fechaISO = fechaSeleccionada.toISOString().split("T")[0];
+        } else {
+          fechaISO = new Date(fechaSeleccionada).toISOString().split("T")[0];
+        }
+      }
+
+      const datos = await obtenerAseguramientos(
+        pagina,
+        aseguramientosPorPagina,
+        fechaISO
+      );
+
+      if (datos?.results) {
+        setAseguramientos(datos.results);
+        setTotalPaginas(datos.meta.totalPages);
+        setTotalAseguramientos(datos.meta.total);
+        
+        // Calcular total MW
+        const mwTotal = datos.results.reduce((sum, a) => sum + (a.mw || 0), 0);
+        setTotalMW(mwTotal);
+      } else {
+        setAseguramientos([]);
+        setTotalPaginas(1);
+        setTotalAseguramientos(0);
+        setTotalMW(0);
+      }
+    } catch (err) {
+      const mensajeError = err?.message || "Error desconocido";
+      setError(`Error cargando aseguramientos: ${mensajeError}`);
+      setAseguramientos([]);
+      setTotalPaginas(1);
+      setTotalAseguramientos(0);
+      setTotalMW(0);
+    } finally {
+      setCargandoAseguramientos(false);
+    }
+  }, [pagina, fechaSeleccionada]);
+
+  // Cargar circuitos una sola vez al montar
+  useEffect(() => {
+    cargarCircuitos();
+  }, [cargarCircuitos]);
+
+  // Cargar aseguramientos cuando cambia página o fecha
+  useEffect(() => {
+    cargarAseguramientos();
+  }, [cargarAseguramientos]);
+
+  // ESTADO DE FORMULARIO
   const [formData, setFormData] = useState({
     id_CircuitoP: "",
+    CircuitoP: "",
     fechaInicial: "",
     fechaFinal: "",
     Observaciones: "",
@@ -33,56 +122,12 @@ export default function AseguramientosPage() {
   });
   const [errorForm, setErrorForm] = useState(null);
 
-  // CARGAR DATOS
-  useEffect(() => {
-    cargarDatos();
-  }, []);
-
-  const cargarDatos = async () => {
-    try {
-      setCargando(true);
-      setError(null);
-      const [asg, circ] = await Promise.all([
-        apiClient.aseguramientos.getAll(),
-        apiClient.circuitos.getApagables(),
-      ]);
-      setAseguramientos(asg);
-      setCircuitos(circ);
-    } catch (err) {
-      setError("Error cargando datos: " + (err?.message || "Error desconocido"));
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  // FILTRAR POR FECHA
-  const fechaComparacion = fechaSeleccionada instanceof Date ? fechaSeleccionada : new Date(fechaSeleccionada);
-  const aseguramientosActivos = aseguramientos.filter(
-    (a) => {
-      const fechaIni = a.fechaInicial instanceof Date ? a.fechaInicial : new Date(a.fechaInicial);
-      const fechaFin = a.fechaFinal instanceof Date ? a.fechaFinal : new Date(a.fechaFinal);
-      return fechaIni <= fechaComparacion && fechaFin >= fechaComparacion;
-    }
-  );
-  const aseguramientosPaginados = aseguramientosActivos
-    .sort((a, b) => {
-      const fechaFinA = a.fechaFinal instanceof Date ? a.fechaFinal : new Date(a.fechaFinal);
-      const fechaFinB = b.fechaFinal instanceof Date ? b.fechaFinal : new Date(b.fechaFinal);
-      return fechaFinB.getTime() - fechaFinA.getTime();
-    })
-    .slice((pagina - 1) * aseguramientosPorPagina, pagina * aseguramientosPorPagina);
-
-  const totalMW = aseguramientosActivos.reduce((sum, a) => sum + (a.mw || 0), 0);
-  const totalPaginas = Math.ceil(
-    aseguramientosActivos.length / aseguramientosPorPagina
-  );
-
-  // HANDLERS
+  // HANDLERS DEL FORMULARIO
   const handleSubmitForm = async (e) => {
     e.preventDefault();
     setErrorForm(null);
 
-    // VALIDACIÓN
+    // VALIDACIONES
     if (!formData.id_CircuitoP) {
       setErrorForm("Selecciona un circuito");
       return;
@@ -101,17 +146,24 @@ export default function AseguramientosPage() {
     }
 
     try {
-      const circuito = circuitos.find(
-        (c) => c.idCircuitoP === Number(formData.id_CircuitoP)
-      );
-      if (!circuito) {
-        setErrorForm("Circuito no encontrado");
-        return;
+      setCargando(true);
+      
+      // Usar CircuitoP si viene en formData (desde ComboBox), si no, buscarlo
+      let circuitoP = formData.CircuitoP;
+      if (!circuitoP) {
+        const circuito = circuitos.find(
+          (c) => c.idCircuitoP === Number(formData.id_CircuitoP)
+        );
+        if (!circuito) {
+          setErrorForm("Circuito no encontrado");
+          return;
+        }
+        circuitoP = circuito.CircuitoP || "";
       }
 
       const nuevoAseguramiento = {
         id_CircuitoP: Number(formData.id_CircuitoP),
-        CircuitoP: circuito.CircuitoP || "",
+        CircuitoP: circuitoP,
         fechaInicial: new Date(formData.fechaInicial),
         fechaFinal: new Date(formData.fechaFinal),
         Observaciones: formData.Observaciones,
@@ -119,28 +171,49 @@ export default function AseguramientosPage() {
         tipo: formData.tipo,
       };
 
-      await apiClient.aseguramientos.create(nuevoAseguramiento);
-      setAseguramientos([...aseguramientos, nuevoAseguramiento]);
+      await crearAseguramiento(nuevoAseguramiento);
+      
+      setExito(`Aseguramiento creado exitosamente para ${circuitoP}`);
       setMostrarFormulario(false);
       setFormData({
         id_CircuitoP: "",
+        CircuitoP: "",
         fechaInicial: "",
         fechaFinal: "",
         Observaciones: "",
         mw: "",
         tipo: "Programado",
       });
+
+      // Recargar aseguramientos
+      await cargarAseguramientos();
     } catch (err) {
       setErrorForm("Error creando aseguramiento: " + (err?.message || "Error desconocido"));
+    } finally {
+      setCargando(false);
     }
   };
 
+  const handleEliminarAseguramiento = async (id) => {
+    try {
+      setEliminando(id);
+      await eliminarAseguramiento(id);
+      setExito("Aseguramiento eliminado");
+      await cargarAseguramientos();
+    } catch (err) {
+      setError("Error eliminando aseguramiento: " + (err?.message || "Error desconocido"));
+    } finally {
+      setEliminando(null);
+    }
+  };
+
+  // EXPORTACIÓN
   const exportarAExcel = (datos) => {
     const datosFormateados = datos.map((item) => ({
       "ID Circuito P": item.id_CircuitoP,
       "Circuito": item.CircuitoP,
-      "Fecha Inicial": formatDateDisplay(item.fechaInicial),
-      "Fecha Final": formatDateDisplay(item.fechaFinal),
+      "Fecha Inicial": formatDateTimeDisplay(item.fechaInicial),
+      "Fecha Final": formatDateTimeDisplay(item.fechaFinal),
       "Observaciones": item.Observaciones,
       "MW": item.mw || "N/A",
       "Tipo": item.tipo,
@@ -149,14 +222,13 @@ export default function AseguramientosPage() {
     const hoja = XLSX.utils.json_to_sheet(datosFormateados);
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, "Aseguramientos");
-    const nombreFecha = fechaSeleccionada instanceof Date ? formatDateDisplay(fechaSeleccionada) : formatDateDisplay(new Date(fechaSeleccionada));
-    XLSX.writeFile(
-      libro,
-      `Aseguramientos_${nombreFecha}.xlsx`
-    );
+    const nombreFecha = fechaSeleccionada 
+      ? formatDateDisplay(fechaSeleccionada) 
+      : "Historial";
+    XLSX.writeFile(libro, `Aseguramientos_${nombreFecha}.xlsx`);
   };
 
-  if (cargando) {
+  if (cargandoAseguramientos || cargandoCircuitos) {
     return <LoadingSpinner message="Cargando aseguramientos..." />;
   }
 
@@ -168,13 +240,17 @@ export default function AseguramientosPage() {
         <div className="flex-1">
           <h3 className="text-blue-800 font-bold">Gestión de Circuitos Asegurados</h3>
           <p className="text-blue-700 text-sm">
-            Los circuitos listados aquí quedan exentos de rotación para proteger
-            servicios críticos. Se muestra el estado para la fecha: <strong>{formatDateDisplay(fechaSeleccionada)}</strong>
+            Los circuitos listados aquí quedan exentos de rotación para proteger servicios críticos.
+            {fechaSeleccionada ? (
+              <> Se muestra el estado para la fecha: <strong>{formatDateDisplay(fechaSeleccionada)}</strong></>
+            ) : (
+              <> Se muestra el <strong>historial completo</strong> de protecciones ordenado del más reciente al más antiguo</>
+            )}
           </p>
         </div>
       </div>
 
-      {/* Error Message */}
+      {/* Mensajes */}
       {error && (
         <AlertMessage
           type="error"
@@ -184,18 +260,30 @@ export default function AseguramientosPage() {
         />
       )}
 
+      {exito && (
+        <AlertMessage
+          type="success"
+          title="Éxito"
+          message={exito}
+          onClose={() => setExito(null)}
+        />
+      )}
+
       {/* Cabecera y Controles */}
       <div className="flex justify-between items-start bg-white p-6 rounded-xl border shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Aseguramientos Activos</h2>
+          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <ShieldCheck className="text-blue-600" /> 
+            {fechaSeleccionada ? "Aseguramientos Activos" : "Historial de Aseguramientos"}
+          </h2>
           <p className="text-sm text-slate-500 mt-1">
-            {aseguramientosActivos.length} aseguramiento(s) activo(s) · 
+            {totalAseguramientos} aseguramiento(s) · 
             <span className="font-bold text-blue-600">{totalMW.toFixed(2)} MW</span> protegido(s)
           </p>
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => exportarAExcel(aseguramientosActivos)}
+            onClick={() => exportarAExcel(aseguramientos)}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
           >
             <FileSpreadsheet size={18} /> Exportar
@@ -204,37 +292,68 @@ export default function AseguramientosPage() {
             onClick={() => setMostrarFormulario(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
           >
-            Nuevo
+            + Nuevo
           </button>
         </div>
       </div>
 
       {/* Selector de Fecha */}
       <div className="bg-white p-4 rounded-xl border shadow-sm">
-        <label className="flex items-center gap-3">
-          <Calendar size={20} className="text-slate-600" />
-          <span className="font-medium text-slate-700">Mostrar aseguramientos para la fecha:</span>
-          <input
-            type="date"
-            value={
-              fechaSeleccionada instanceof Date
-                ? `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, "0")}-${String(fechaSeleccionada.getDate()).padStart(2, "0")}`
-                : new Date().toISOString().split("T")[0]
-            }
-            onChange={(e) => {
-              setFechaSeleccionada(new Date(e.target.value));
-              setPagina(1);
-            }}
-            className="px-3 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </label>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-3 flex-1">
+            <Calendar size={20} className="text-slate-600" />
+            <span className="font-medium text-slate-700">Filtrar por fecha (opcional):</span>
+            <input
+              type="date"
+              value={
+                fechaSeleccionada
+                  ? `${fechaSeleccionada.getFullYear()}-${String(fechaSeleccionada.getMonth() + 1).padStart(2, "0")}-${String(fechaSeleccionada.getDate()).padStart(2, "0")}`
+                  : ""
+              }
+              onChange={(e) => {
+                if (e.target.value) {
+                  setFechaSeleccionada(new Date(e.target.value));
+                  setPagina(1);
+                }
+              }}
+              className="px-3 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              placeholder="Sin filtro"
+            />
+          </label>
+          {fechaSeleccionada && (
+            <button
+              onClick={() => {
+                setFechaSeleccionada(null);
+                setPagina(1);
+              }}
+              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg font-medium text-slate-700 transition-colors"
+            >
+              Limpiar filtro
+            </button>
+          )}
+        </div>
+        {fechaSeleccionada && (
+          <p className="text-sm text-slate-500 mt-2">
+            Mostrando aseguramientos activos el {formatDateDisplay(fechaSeleccionada)}
+          </p>
+        )}
+        {!fechaSeleccionada && (
+          <p className="text-sm text-slate-500 mt-2">
+            Mostrando historial completo de protecciones
+          </p>
+        )}
       </div>
 
       {/* Tabla */}
-      <AseguramientosTable
-        aseguramientos={aseguramientosPaginados}
-        onDelete={() => {}} // Implementar cuando sea necesario
-      />
+      {cargandoAseguramientos ? (
+        <LoadingSpinner message="Cargando..." />
+      ) : (
+        <AseguramientosTable
+          aseguramientos={aseguramientos}
+          onDelete={handleEliminarAseguramiento}
+          eliminando={eliminando}
+        />
+      )}
 
       {/* Paginación */}
       {totalPaginas > 1 && (
@@ -275,39 +394,66 @@ export default function AseguramientosPage() {
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Circuito Asegurado
+                  Circuito Asegurado *
                 </label>
-                <select
-                  value={formData.id_CircuitoP}
-                  onChange={(e) => setFormData({ ...formData, id_CircuitoP: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Selecciona un circuito apagable...</option>
-                  {circuitos.map((c) => (
-                    <option key={c.idCircuitoP} value={c.idCircuitoP}>
-                      {c.CircuitoP} (ID: {c.idCircuitoP})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Fecha Inicial</label>
-                <input
-                  type="date"
-                  value={formData.fechaInicial}
-                  onChange={(e) => setFormData({ ...formData, fechaInicial: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                <CircuitoAutocomplete
+                  circuitos={circuitos}
+                  value={
+                    formData.id_CircuitoP
+                      ? {
+                          id_CircuitoP: Number(formData.id_CircuitoP),
+                          CircuitoP: formData.CircuitoP,
+                        }
+                      : null
+                  }
+                  onChange={(value) => {
+                    if (value) {
+                      setFormData({ ...formData, ...value });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        id_CircuitoP: "",
+                        CircuitoP: "",
+                      });
+                    }
+                  }}
+                  placeholder="Busca por nombre o ID..."
+                  disabled={cargando}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Fecha Final</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Tipo *</label>
+                <select
+                  value={formData.tipo}
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                >
+                  <option>Programado</option>
+                  <option>Emergencia</option>
+                  <option>Preventivo</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Fecha Inicial *</label>
                 <input
-                  type="date"
+                  type="datetime-local"
+                  value={formData.fechaInicial}
+                  onChange={(e) => setFormData({ ...formData, fechaInicial: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Fecha Final *</label>
+                <input
+                  type="datetime-local"
                   value={formData.fechaFinal}
                   onChange={(e) => setFormData({ ...formData, fechaFinal: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  required
                 />
               </div>
 
@@ -324,26 +470,14 @@ export default function AseguramientosPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Tipo</label>
-                <select
-                  value={formData.tipo}
-                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option>Programado</option>
-                  <option>Permanente</option>
-                  <option>Temporal</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Observaciones</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Observaciones *</label>
                 <textarea
                   value={formData.Observaciones}
                   onChange={(e) => setFormData({ ...formData, Observaciones: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
                   rows={3}
                   placeholder="Motivo del aseguramiento..."
+                  required
                 />
               </div>
 
@@ -360,9 +494,10 @@ export default function AseguramientosPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors"
+                  disabled={cargando}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:bg-slate-400 transition-colors"
                 >
-                  Guardar
+                  {cargando ? "Guardando..." : "Guardar"}
                 </button>
               </div>
             </form>

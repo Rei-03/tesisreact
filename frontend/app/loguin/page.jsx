@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AlertCircle, Lock, User, Zap, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { autenticarUsuario } from "@/lib/services/usuariosService";
+import { loginUser } from "@/lib/services/authService";
 
 export default function LoginPage() {
   const [usuario, setUsuario] = useState("");
@@ -20,15 +20,17 @@ export default function LoginPage() {
     setCargando(true);
 
     try {
-      // Autenticar con el servicio (usa modo demo por ahora)
-      const usuarioAutenticado = await autenticarUsuario(usuario, password);
+      // Autenticar con el backend (usa httpOnly cookies)
+      const usuarioAutenticado = await loginUser(usuario, password);
       
-      // Guardar en AuthContext
+      // Guardar en AuthContext con campos normalizados del backend
       login({
         id: usuarioAutenticado.id,
-        nombre: usuarioAutenticado.nombre,
-        login: usuarioAutenticado.login,
-        rol: usuarioAutenticado.rol,
+        name: usuarioAutenticado.name,
+        nombre: usuarioAutenticado.name, // Alias para compatibilidad
+        email: usuarioAutenticado.email,
+        role: usuarioAutenticado.role,
+        rol: usuarioAutenticado.role, // Alias para compatibilidad
       });
       
       // Redirigir al dashboard
@@ -71,7 +73,7 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase ml-1">
-              Usuario
+              Email
             </label>
             <div className="relative">
               <User
@@ -79,11 +81,11 @@ export default function LoginPage() {
                 size={20}
               />
               <input
-                type="text"
+                type="email"
                 value={usuario}
                 onChange={(e) => setUsuario(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-slate-700"
-                placeholder="Ej: bcastellano"
+                placeholder="correo@example.com"
                 required
                 disabled={cargando}
               />
@@ -126,16 +128,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        {/* Ayuda de credenciales en modo demo */}
-        <div className="p-4 bg-blue-50 border-t border-blue-200">
-          <p className="text-xs font-bold text-blue-800 mb-2">📝 Credenciales Demo:</p>
-          <div className="space-y-1 text-[11px] text-blue-700">
-            <p><strong>Admin:</strong> bcastellano / admin123</p>
-            <p><strong>Operador:</strong> clopez / operador123</p>
-            <p><strong>Operador:</strong> mgarcia / operador123</p>
-          </div>
-        </div>
 
         <div className="p-4 bg-slate-50 border-t text-center">
           <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">

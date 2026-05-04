@@ -2,8 +2,9 @@ import z from "zod";
 import "dotenv/config";
 
 export const envSchema = z.object({
-  PORT: z.coerce.number().min(1).max(65535).default(3001),
+  PORT: z.coerce.number().min(1).max(65535).default(3000),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  FRONTEND_URL: z.string().default("http://localhost:4321"),
   NATS_URLS: z.string()
     .default("nats://localhost:4222")
     .transform((val) => val.split(",")),

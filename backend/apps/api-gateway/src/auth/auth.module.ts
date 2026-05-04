@@ -21,10 +21,12 @@ import { env } from '../config/env';
     JwtAuthGuard,
     RolesGuard,
     AuthGuard,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: AuthGuard,
-    // },
+    // Global Authentication Guard - Protege todos los endpoints por defecto
+    // Los endpoints públicos deben llevar la anotación @Public()
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
   ],
   exports: [JwtAuthGuard, RolesGuard, AuthGuard],
 })

@@ -1,4 +1,5 @@
 import { Calendar } from "lucide-react";
+import CircuitoCombobox from "@/components/shared/CircuitoCombobox";
 
 export default function AseguramientosForm({
   formData,
@@ -10,11 +11,21 @@ export default function AseguramientosForm({
   setMostrarFormulario,
 }) {
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value, circuitoP } = e.target;
+    
+    // Si viene del CircuitoCombobox, capturar también CircuitoP
+    if (name === "id_CircuitoP" && circuitoP) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        CircuitoP: circuitoP, // Guardar CircuitoP también
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   if (!mostrarFormulario) {
@@ -36,22 +47,14 @@ export default function AseguramientosForm({
       <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
-            Circuito *
+            Circuito Asegurado *
           </label>
-          <select
-            name="id_CircuitoP"
+          <CircuitoCombobox
+            circuitos={circuitos}
             value={formData.id_CircuitoP}
             onChange={handleChange}
-            className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            required
-          >
-            <option value="">Selecciona un circuito</option>
-            {circuitos.map((c) => (
-              <option key={c.idCircuitoP} value={c.idCircuitoP}>
-                {c.CircuitoP}
-              </option>
-            ))}
-          </select>
+            placeholder="Buscar y seleccionar circuito..."
+          />
         </div>
 
         <div>

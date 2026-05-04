@@ -2,11 +2,7 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import * as XLSX from "xlsx";
-import {
-  reportesMock,
-  aseguramientosReporteMock,
-  estadisticasReportesMock,
-} from "@/data/mock";
+import axiosInstance from "@/lib/api/apiClient";
 
 /**
  * Obtiene el historial de reportes/rotaciones con filtros opcionales
@@ -17,41 +13,20 @@ import {
  */
 export const obtenerReportes = async (filtros = {}) => {
   try {
-    // TODO: Conectar con el endpoint del backend cuando esté listo
-    // endpoint: GET /api/reportes o GET /api/rotaciones/historial
-    // Parámetros: ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
-
-    // Por ahora usamos datos mocks
-    let reportes = [...reportesMock];
-
-    // Filtrar por fecha desde
+    const params = new URLSearchParams();
+    
     if (filtros.desde) {
-      const desdeDate = new Date(filtros.desde).getTime();
-      reportes = reportes.filter((r) => {
-        const reporteDate = new Date(r.fecha || r.createdAt).getTime();
-        return reporteDate >= desdeDate;
-      });
+      params.append('desde', filtros.desde);
     }
-
-    // Filtrar por fecha hasta
     if (filtros.hasta) {
-      const hastaDate = new Date(filtros.hasta);
-      hastaDate.setHours(23, 59, 59, 999);
-      const hastaTime = hastaDate.getTime();
-      reportes = reportes.filter((r) => {
-        const reporteDate = new Date(r.fecha || r.createdAt).getTime();
-        return reporteDate <= hastaTime;
-      });
+      params.append('hasta', filtros.hasta);
     }
 
-    // Ordenar por fecha descendente (más recientes primero)
-    reportes.sort(
-      (a, b) =>
-        new Date(b.fecha || b.createdAt).getTime() -
-        new Date(a.fecha || a.createdAt).getTime()
+    const response = await axiosInstance.get(
+      `/rotaciones/historial?${params}` 
     );
-
-    return reportes;
+    
+    return response.data?.data || [];
   } catch (error) {
     console.error("Error obteniendo reportes:", error);
     throw error;
@@ -64,11 +39,12 @@ export const obtenerReportes = async (filtros = {}) => {
  */
 export const obtenerEstadisticasReportes = async () => {
   try {
-    // TODO: Conectar con endpoint cuando esté listo
-    // endpoint: GET /api/reportes/estadisticas
-
-    // Por ahora retornamos datos mocks
-    return estadisticasReportesMock;
+    const response = await axiosInstance.get('/reportes/estadisticas');
+    return response.data?.data || {
+      totalReportes: 0,
+      mwTotalApagado: 0,
+      circuitosTotales: 0,
+    };
   } catch (error) {
     console.error("Error obteniendo estadísticas:", error);
     return {
@@ -81,19 +57,16 @@ export const obtenerEstadisticasReportes = async () => {
 
 /**
  * Obtiene un reporte específico por ID
- * @param {number} reporteId - ID del reporte
+ * @param {string} reporteId - ID del reporte
  * @returns {Promise<Object>} Detalles del reporte
  */
 export const obtenerReportePorId = async (reporteId) => {
   try {
-    // TODO: Conectar con el endpoint del backend cuando esté listo
-    // endpoint: GET /api/reportes/{id}
-
-    const reporte = reportesMock.find((r) => r.id === reporteId);
-    if (!reporte) {
-      throw new Error("Reporte no encontrado");
+    const response = await axiosInstance.get(`/rotaciones/historial/${reporteId}`);
+    if (response.data?.data) {
+      return response.data.data;
     }
-    return reporte;
+    throw new Error("Reporte no encontrado");
   } catch (error) {
     console.error("Error obteniendo reporte:", error);
     throw error;
@@ -393,13 +366,11 @@ export const descargarReporteExcel = async (reporteId) => {
  */
 export const obtenerReportesAseguramientos = async () => {
   try {
-    // TODO: Conectar con endpoint cuando esté listo
-    // endpoint: GET /api/reportes/aseguramientos
-
-    return aseguramientosReporteMock;
+    const response = await axiosInstance.get('/rotaciones/aseguramientos');
+    return response.data?.data || [];
   } catch (error) {
     console.error("Error obteniendo reportes de aseguramientos:", error);
-    throw error;
+    return [];
   }
 };
 

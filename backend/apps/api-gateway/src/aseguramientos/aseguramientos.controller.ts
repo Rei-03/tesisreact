@@ -20,6 +20,7 @@ export class AseguramientosController {
     @Query('page') page?: number,
     @Query('pageSize') pageSize?: number,
     @Query('fecha') fecha?: string,
+    @Query('circuitoP') circuitoP?: string,
   ) {
     const pageNum = page ? Number(page) : 1;
     const pageSizeNum = pageSize ? Number(pageSize) : 20;
@@ -28,6 +29,7 @@ export class AseguramientosController {
         page: pageNum,
         pageSize: pageSizeNum,
         fecha,
+        circuitoP,
       })
     );
   }

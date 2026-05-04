@@ -22,14 +22,10 @@ export default function UsuariosPage() {
   const [error, setError] = useState(null);
   const [exito, setExito] = useState(null);
   
-  const [nuevoNombre, setNuevoNombre] = useState("");
-  const [nuevoLogin, setNuevoLogin] = useState("");
-  const [nuevoPassword, setNuevoPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [nuevoRol, setNuevoRol] = useState("operador");
   const [cargando, setCargando] = useState(false);
   const [loginUnico, setLoginUnico] = useState(true);
   const [eliminando, setEliminando] = useState(null);
+  const [resetFormTrigger, setResetFormTrigger] = useState(0);
 
   // Memoizar cargarUsuarios para evitar recreaciones innecesarias
   const cargarUsuarios = useCallback(async () => {
@@ -66,16 +62,16 @@ export default function UsuariosPage() {
     setExito(null);
 
     // Validaciones
-    if (!formData.nombre.trim()) {
+    if (!formData.name.trim()) {
       setError("El nombre es requerido");
       return;
     }
-    if (!formData.login.trim()) {
-      setError("El login es requerido");
+    if (!formData.email.trim()) {
+      setError("El email es requerido");
       return;
     }
     if (!loginUnico) {
-      setError("El login ya existe");
+      setError("El email ya existe");
       return;
     }
     if (!formData.password) {
@@ -94,15 +90,19 @@ export default function UsuariosPage() {
     try {
       setCargando(true);
       const nuevoUsuario = {
-        nombre: formData.nombre,
-        login: formData.login,
+        email: formData.email,
+        name: formData.name,
         password: formData.password,
-        rol: formData.rol,
+        role: formData.role,
       };
 
       await crearUsuario(nuevoUsuario);
 
-      setExito(`Usuario "${formData.nombre}" creado exitosamente como ${formData.rol}`);
+      setExito(`Usuario "${formData.name}" creado exitosamente como ${formData.role}`);
+      
+      // Resetear el formulario
+      setResetFormTrigger(prev => prev + 1);
+      setLoginUnico(true);
       
       // Recargar usuarios
       await cargarUsuarios();
@@ -113,43 +113,15 @@ export default function UsuariosPage() {
     }
   };
 
-  const validarLogin = (login, usuariosActuales) => {
-    if (!login) {
+  const validarLogin = (email, usuariosActuales) => {
+    if (!email) {
       setLoginUnico(false);
       return;
     }
     
-    // Verificar que no exista un usuario con ese login
-    const existe = usuariosActuales.some((u) => u.login === login);
+    // Verificar que no exista un usuario con ese email
+    const existe = usuariosActuales.some((u) => u.email === email);
     setLoginUnico(!existe);
-  };
-    }
-
-    try {
-      setCargando(true);
-      const nuevoUsuario = {
-        nombre: nuevoNombre,
-        login: nuevoLogin,
-        password: nuevoPassword,
-        rol: nuevoRol,
-      };
-
-      await crearUsuario(nuevoUsuario);
-
-      setExito(`Usuario "${nuevoNombre}" creado exitosamente como ${nuevoRol}`);
-      setNuevoNombre("");
-      setNuevoLogin("");
-      setNuevoPassword("");
-      setConfirmPassword("");
-      setNuevoRol("operador");
-      
-      // Recargar usuarios
-      await cargarUsuarios();
-    } catch (err) {
-      setError("Error creando usuario: " + (err?.message || "Error desconocido"));
-    } finally {
-      setCargando(false);
-    }
   };
 
   const handleEliminarUsuario = async (usuarioId, nombreUsuario) => {
@@ -188,7 +160,7 @@ export default function UsuariosPage() {
           <Shield className="text-blue-600" /> Administración de Usuarios
         </h2>
         <p className="text-sm text-slate-500">
-          Rol actual: <span className="font-bold text-blue-600">{user?.rol || "admin"}</span>
+          Rol actual: <span className="font-bold text-blue-600">{user?.role || "admin"}</span>
         </p>
       </div>
 
@@ -218,6 +190,7 @@ export default function UsuariosPage() {
         loginUnico={loginUnico}
         onValidarLogin={validarLogin}
         usuarios={usuarios}
+        resetTrigger={resetFormTrigger}
       />
 
       {/* Tabla de Usuarios */}
