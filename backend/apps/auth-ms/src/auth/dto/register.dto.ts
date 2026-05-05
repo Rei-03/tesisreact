@@ -13,6 +13,6 @@ export class RegisterDto {
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   password!: string;
 
-  @IsEnum(UserRole, { message: 'El rol debe ser uno de: admin, supervisor, operador, user' })
-  role?: UserRole = UserRole.USER;
+  @IsEnum(UserRole, { message: 'El rol debe ser uno de: admin, operador' })
+  role?: UserRole = UserRole.OPERADOR;
 }

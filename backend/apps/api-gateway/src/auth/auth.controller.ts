@@ -18,7 +18,7 @@ import {
   VerifyTokenDto,
   RefreshTokenDto,
 } from './dto';
-import { Public } from './decorators';
+import { Public, Roles } from './decorators';
 import { UserRole } from './dto/user-role.enum';
 
 @Controller('auth')
@@ -26,22 +26,26 @@ export class AuthController {
   constructor(@Inject('NatsService') private readonly client: ClientProxy) {}
 
   /**
-   * Register a new user
-   * No authentication required
+    * Register a new user
+    * Protected: only admins can create users
+   * Does NOT set cookies — the creator's session is never overwritten.
+   * If the new user needs to authenticate, they must call POST /auth/login.
    */
-  @Public()
+    @Roles(UserRole.ADMIN)
   @Post('register')
-  async register(@Body() registerDto: RegisterDto, @Res() res: Response) {
+  async register(@Body() registerDto: RegisterDto) {
     const result = await firstValueFrom(
       this.client.send('auth.register', registerDto)
     );
 
-    // Si el registro es exitoso, establecer cookies
-    if (result.success && result.data?.accessToken) {
-      this.setCookies(res, result.data.accessToken, result.data.refreshToken);
+    // Strip tokens from response — session cookies must NEVER be set here
+    // so that an authenticated admin creating a user keeps their own session.
+    if (result.success && result.data) {
+      const { accessToken, refreshToken, ...dataWithoutTokens } = result.data;
+      result.data = dataWithoutTokens;
     }
 
-    res.json(result);
+    return result;
   }
 
   /**
@@ -197,8 +201,9 @@ export class AuthController {
 
   /**
    * Get all users with pagination
-   * Protected: requires valid JWT (AuthGuard global)
+    * Protected: only admins can list users
    */
+    @Roles(UserRole.ADMIN)
   @Get('users')
   async findAll(
     @Query('page') page?: number,

@@ -22,7 +22,7 @@ describe('AuthService', () => {
     email: 'test@example.com',
     name: 'Test User',
     password: 'hashed_password',
-    role: UserRole.USER,
+    role: UserRole.OPERADOR,
     isActive: true,
   };
 
@@ -78,7 +78,7 @@ describe('AuthService', () => {
         email: 'newuser@example.com',
         name: 'New User',
         password: 'password123',
-        role: UserRole.USER,
+        role: UserRole.OPERADOR,
       };
 
       mockUserRepository.findOne.mockResolvedValue(null);
@@ -252,7 +252,7 @@ describe('AuthService', () => {
       const tokenPayload = {
         sub: '123',
         email: 'test@example.com',
-        role: UserRole.USER,
+        role: UserRole.OPERADOR,
       };
 
       mockRedisClient.get.mockResolvedValue(null);
@@ -304,7 +304,7 @@ describe('AuthService', () => {
       const tokenPayload = {
         sub: '123',
         email: 'test@example.com',
-        role: UserRole.USER,
+        role: UserRole.OPERADOR,
       };
 
       mockRedisClient.get.mockResolvedValue(null);

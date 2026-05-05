@@ -48,7 +48,7 @@ export default function UsuariosPage() {
     if (!isAuthenticated || !isAdmin()) {
       router.push("/loguin");
     }
-  }, []); // Solo ejecutar una vez
+  }, [isLoading, isAuthenticated, isAdmin, router]);
 
   // Cargar usuarios cuando está autenticado
   useEffect(() => {
@@ -150,6 +150,10 @@ export default function UsuariosPage() {
   // Si aún está cargando la autenticación
   if (isLoading) {
     return <LoadingSpinner message="Cargando..." />;
+  }
+
+  if (!isAuthenticated || !isAdmin()) {
+    return <LoadingSpinner message="Validando permisos..." />;
   }
 
   return (

@@ -1,3 +1,6 @@
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional } from 'class-validator';
+
 /**
  * DTO para solicitar generación de rotación de energía
  * 
@@ -12,12 +15,15 @@ export class CreateRotacioneDto {
    * Déficit de potencia en MW que debe ser cubierto
    * Ejemplo: 50 (para cubrir 50 MW de falta)
    */
+  @IsNumber()
   deficitX!: number;
 
   /**
    * Fecha de referencia para obtener consumos
    * Si no se proporciona, usa la fecha actual
    */
+  @Type(() => Date)
+  @IsOptional()
   fecha?: Date;
 
   /**
@@ -29,5 +35,7 @@ export class CreateRotacioneDto {
    * Ejemplo: déficit 50 MW + encender 2 circuitos (30 MW total)
    *          → déficit efectivo = 80 MW (necesita apagar más)
    */
+  @IsNumber()
+  @IsOptional()
   circuitosAEncender?: number;
 }

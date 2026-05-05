@@ -1,13 +1,19 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsNumber, IsString } from "class-validator";
+import { IsNumber, IsOptional } from "class-validator";
 
 export class CreateRotacioneDto {
 	@IsNumber()
 	deficitX!: number;
 
 	@Type(() => Date)
-  fecha?: Date;
+	@IsOptional()
+	fecha?: Date;
 
-	@IsBoolean()
-  soloApagar?: boolean;
+	@IsNumber()
+	@IsOptional()
+	circuitosAEncender?: number;
+
+	@IsNumber()
+	@IsOptional()
+	soloApagar?: boolean;
 }

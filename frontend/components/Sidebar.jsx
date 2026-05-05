@@ -1,7 +1,6 @@
 "use client"; // <--- Asegúrate de que sea Client Component para usar useAuth
 import { useAuth } from "@/contexts/AuthContext"; // Importamos el hook de auth
 import {
-  FileBarChart,
   LayoutDashboard,
   ShieldCheck,
   Users,
@@ -24,7 +23,6 @@ export default function Sidebar() {
       icon: <ShieldCheck size={20} />,
       href: "/aseguramientos",
     },
-    { name: "Reportes", icon: <FileBarChart size={20} />, href: "/reportes" },
   ];
 
   // AGREGAR BOTÓN DE USUARIOS SOLO SI ES ADMIN

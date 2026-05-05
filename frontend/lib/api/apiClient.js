@@ -42,40 +42,101 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// ─── Token Refresh Logic ────────────────────────────────────────────────────
+// Cola de requests que fallaron con 401 mientras se refrescaba el token
+let isRefreshing = false;
+let failedQueue = [];
+
+/**
+ * Procesa la cola de requests pendientes tras un intento de refresh.
+ * @param {Error|null} error - null si el refresh fue exitoso, Error si falló
+ */
+const processQueue = (error) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve();
+    }
+  });
+  failedQueue = [];
+};
+
+/**
+ * Redirige al login limpiando datos locales.
+ */
+const redirectToLogin = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('userData');
+  localStorage.removeItem('token');
+  localStorage.removeItem('isAuthenticated');
+  const isLoginPage =
+    window.location.pathname === '/loguin' ||
+    window.location.pathname === '/login';
+  if (!isLoginPage) {
+    window.location.href = '/loguin';
+  }
+};
+
 // Interceptor para manejo de respuestas y errores
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const message = error.response?.data?.message || error.message || 'Error desconocido';
+  async (error) => {
+    const originalRequest = error.config;
     const statusCode = error.response?.status;
-    
+    const message =
+      error.response?.data?.message || error.message || 'Error desconocido';
+
     console.error(`API Error [${statusCode}]:`, message);
-    
-    // Si es 401 (no autorizado), la sesión es inválida
-    if (statusCode === 401) {
-      if (typeof window !== 'undefined') {
-        // Limpiar datos locales
-        localStorage.removeItem('userData');
-        localStorage.removeItem('token');
-        localStorage.removeItem('isAuthenticated');
-        
-        // Redirigir a login SOLO si no estamos ya en la página de login
-        const isLoginPage = window.location.pathname === '/loguin' || window.location.pathname === '/login';
-        if (!isLoginPage) {
-          // Usar un pequeño delay para evitar múltiples redirecciones
-          setTimeout(() => {
-            window.location.href = '/loguin';
-          }, 500);
+
+    // ── Manejo de 401: intentar refresh antes de redirigir a login ──────────
+    if (statusCode === 401 && !originalRequest._retry) {
+      // Marcar request para no reintentar si el refresh también falla
+      originalRequest._retry = true;
+
+      // Ignorar los endpoints de auth para evitar bucles infinitos
+      const isAuthEndpoint =
+        originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/refresh') ||
+        originalRequest.url?.includes('/auth/register');
+
+      if (!isAuthEndpoint) {
+        // Si ya hay un refresh en curso, encolar este request
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then(() => axiosInstance(originalRequest))
+            .catch((err) => Promise.reject(err));
+        }
+
+        isRefreshing = true;
+
+        try {
+          // Intentar refrescar el token (usa el refreshToken en cookie httpOnly)
+          await axiosInstance.post('/auth/refresh', {});
+          processQueue(null);
+          // Reintentar el request original con el nuevo accessToken (en cookie)
+          return axiosInstance(originalRequest);
+        } catch (refreshError) {
+          processQueue(refreshError);
+          redirectToLogin();
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
         }
       }
+
+      // Si el endpoint de auth falla con 401, limpiar y redirigir
+      redirectToLogin();
     }
-    
+
     // Lanzar error personalizado
-    throw {
+    return Promise.reject({
       status: statusCode,
       message,
       originalError: error,
-    };
+    });
   }
 );
 

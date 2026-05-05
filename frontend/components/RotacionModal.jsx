@@ -102,11 +102,15 @@ export default function RotacionModal({
    * Exporta los resultados a Excel
    */
   const exportarAExcel = () => {
-    const datosFormateados = (resultadoRotacion.cola || []).map((c, idx) => ({
+    const circuitosExportables = (resultadoRotacion.cola || []).filter(
+      (c) => c.accion === "apagado" || c.accion === "mantenido"
+    );
+
+    const datosFormateados = circuitosExportables.map((c, idx) => ({
       "Índice": idx + 1,
       "Número": c.numero,
       "Zona Afectada": c.nombre,
-      "Acción": c.accion === 'encendido' ? 'Encender' : c.accion === 'apagado' ? 'Apagar' : 'Mantener',
+      "Acción": c.accion === "apagado" ? "Apagar" : "Mantener",
     }));
 
     const hoja = XLSX.utils.json_to_sheet(datosFormateados);

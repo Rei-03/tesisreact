@@ -19,10 +19,10 @@ export const Public = () => SetMetadata('isPublic', true);
  * El guard (aplicado globalmente) verificará estos roles
  *
  * Ejemplo:
- * @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+ * @Roles(UserRole.ADMIN, UserRole.OPERADOR)
  * @Post('admin-only')
  * async adminOnlyEndpoint(@Req() req: Request) {
- *   // Solo accessible para usuarios con rol ADMIN o SUPERVISOR
+ *   // Solo accesible para usuarios con rol ADMIN u OPERADOR
  * }
  */
 export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);

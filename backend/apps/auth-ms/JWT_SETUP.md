@@ -7,15 +7,14 @@
 @Column({
   type: 'enum',
   enum: UserRole,
-  default: UserRole.USER,
+  default: UserRole.OPERADOR,
 })
 role: UserRole;
 ```
 
 **Roles disponibles:**
 - `admin` - Administrador del sistema
-- `user` - Usuario regular
-- `operator` - Operador de circuitos
+- `operador` - Operador de circuitos
 
 ### 2. **Auth Service** - Implementado JWT
 - Usa `JwtService` de `@nestjs/jwt` para firmar y verificar tokens
@@ -24,7 +23,7 @@ role: UserRole;
   {
     "sub": "uuid-del-usuario",
     "email": "usuario@example.com",
-    "role": "user|admin|operator",
+    "role": "admin|operador",
     "iat": timestamp,
     "exp": timestamp + 24h
   }
@@ -41,7 +40,7 @@ Ahora incluyen:
     "id": "uuid",
     "email": "usuario@example.com",
     "name": "Juan",
-    "role": "user",
+    "role": "operador",
     "accessToken": "eyJhbGc...",
     "tokenType": "Bearer"
   }
@@ -57,7 +56,7 @@ Ahora incluyen:
   "email": "usuario@example.com",
   "name": "Juan Pérez",
   "password": "password123",
-  "role": "user"  // opcional, default: user
+  "role": "operador"  // opcional, default: operador
 }
 ```
 

@@ -141,7 +141,6 @@ export default function UsuariosForm({
             className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="operador">Operador</option>
-            <option value="supervisor">Supervisor</option>
             <option value="admin">Admin</option>
           </select>
         </div>

@@ -36,7 +36,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { email, name, password, role = UserRole.USER } = registerDto;
+    const { email, name, password, role = UserRole.OPERADOR } = registerDto;
 
     // Verificar si el usuario ya existe
     const existingUser = await this.userRepository.findOne({
@@ -301,6 +301,12 @@ export class AuthService {
 
       // Generar nuevos tokens
       const tokens = this.generateTokens(user.id, user.email, user.role);
+
+      // ── Refresh Token Rotation ─────────────────────────────────────────────
+      // Invalidar el refresh token usado para evitar su reutilización.
+      // Esto previene ataques de token replay si el refresh token es robado.
+      await this.addToBlacklist(refreshToken);
+      // ───────────────────────────────────────────────────────────────────────
 
       return {
         success: true,
