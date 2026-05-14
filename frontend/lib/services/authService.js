@@ -29,7 +29,25 @@ export const validateSession = async () => {
 
     throw new Error(response.data.message || 'Sesión inválida');
   } catch (error) {
-    console.error('Error validando sesión:', error);
+    // Un 401 en /auth/me es esperado si no hay sesión activa (primera carga)
+    // No es un error, simplemente significa que el usuario no está autenticado
+    if (error.response?.status === 401) {
+      // Este es comportamiento normal: usuario no tiene sesión activa
+      console.debug('ℹ️ No hay sesión activa (esperado en primera carga)');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('token');
+      localStorage.removeItem('isAuthenticated');
+      throw error; // Re-lanzar para que AuthContext maneje como "no autenticado"
+    }
+
+    // Mejor manejo de diferentes tipos de errores
+    const errorMessage = error.isNetworkError 
+      ? `Error de conexión: ${error.message}` 
+      : (error.message || 'Error validando sesión');
+    
+    const networkTag = error.isNetworkError ? '[NETWORK]' : '[AUTH]';
+    console.warn(`⚠️ Error validando sesión ${networkTag}:`, errorMessage);
+    
     // Limpiar datos si la sesión no es válida
     localStorage.removeItem('userData');
     localStorage.removeItem('token');

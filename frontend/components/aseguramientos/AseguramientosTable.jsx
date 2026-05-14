@@ -6,6 +6,18 @@ export default function AseguramientosTable({
   onDelete,
   eliminando,
 }) {
+  // Validar duplicados en IDs (solo en desarrollo)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    const ids = aseguramientos.map(a => a.id);
+    const duplicados = ids.filter((id, idx) => ids.indexOf(id) !== idx);
+    if (duplicados.length > 0) {
+      console.warn('⚠️ IDs duplicados en aseguramientos:', [...new Set(duplicados)]);
+    }
+    if (ids.some(id => !id)) {
+      console.warn('⚠️ Algunos aseguramientos no tienen ID');
+    }
+  }
+
   const handleDelete = (id, nombre) => {
     if (window.confirm(`¿Eliminar aseguramiento "${nombre}"?`)) {
       onDelete(id);
@@ -28,8 +40,8 @@ export default function AseguramientosTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {aseguramientos.map((asg) => (
-              <tr key={asg.id} className="hover:bg-slate-50">
+            {aseguramientos.map((asg, index) => (
+              <tr key={asg.id ? `${asg.id}-${index}` : `row-${index}`} className="hover:bg-slate-50">
                 <td className="px-6 py-3 font-bold text-blue-600">{asg.CircuitoP}</td>
                 <td className="px-6 py-3">
                   <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${

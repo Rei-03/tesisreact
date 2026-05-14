@@ -84,10 +84,37 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const statusCode = error.response?.status;
+    
+    // Mejorar manejo de errores de red (sin respuesta del servidor)
+    if (!error.response) {
+      const networkError = {
+        isNetworkError: true,
+        message: error.message || 'Error de conexión con el servidor',
+        details: error.code || 'NETWORK_ERROR',
+      };
+      
+      const url = originalRequest?.url || 'unknown';
+      const method = originalRequest?.method?.toUpperCase() || 'unknown';
+      console.error(
+        `❌ Network Error [${method}] ${url}:`,
+        networkError.message,
+        `(${networkError.details})`
+      );
+      
+      // No reintentar si es error de red
+      return Promise.reject(networkError);
+    }
+
     const message =
       error.response?.data?.message || error.message || 'Error desconocido';
 
-    console.error(`API Error [${statusCode}]:`, message);
+    // No registrar como error los 401 esperados en /auth/me (sin sesión)
+    const isExpectedUnauthorized = 
+      statusCode === 401 && originalRequest.url === '/auth/me' && !originalRequest._retry;
+    
+    if (!isExpectedUnauthorized) {
+      console.error(`API Error [${statusCode}]:`, message);
+    }
 
     // ── Manejo de 401: intentar refresh antes de redirigir a login ──────────
     if (statusCode === 401 && !originalRequest._retry) {

@@ -53,9 +53,20 @@ export function AuthProvider({ children }) {
           setUser(null);
         }
       } catch (error) {
-        console.warn('Sesión inválida o expirada:', error.message);
-        setIsAuthenticated(false);
-        setUser(null);
+        // Diferenciar entre error de red y error de autenticación
+        if (error.isNetworkError) {
+          console.warn(
+            `⚠️ Backend no disponible (${error.message}). Reintentando en 5s...`
+          );
+          // Reintentar después de 5 segundos
+          setTimeout(verifySession, 5000);
+        } else {
+          console.warn(
+            `⚠️ Sesión inválida o expirada: ${error.message || 'Desconocido'}`
+          );
+          setIsAuthenticated(false);
+          setUser(null);
+        }
       } finally {
         setIsLoading(false);
       }

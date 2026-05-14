@@ -14,38 +14,46 @@ Sistema integral de gestión con módulos para:
 - **Configuración**: Ajustes y configuración del sistema
 - **Autenticación**: Sistema seguro de login
 
-## 🚀 Quick Start
+## 🚀 Inicialización
 
 ### Requisitos Previos
-- Node.js 16 o superior
+- Node.js 18 o superior
 - npm, yarn, pnpm o bun
 
-### Instalación
+### Pasos de Inicialización
 
-```bash
-npm install
-```
+1. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
 
-### Desarrollo
+2. **Configurar variables de entorno:**
+   ```bash
+   cp .env.example .env.local
+   ```
+   Edita el archivo `.env.local` y configura las variables necesarias (URL del backend, etc.)
 
-```bash
-npm run dev
-```
+3. **Iniciar servidor de desarrollo:**
+   ```bash
+   npm run dev
+   ```
 
-Abre [http://localhost:4321](http://localhost:4321) en tu navegador para ver la aplicación.
+4. **Abrir aplicación:**
+   Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-### Build Producción
+### Scripts Disponibles
 
-```bash
-npm run build
-npm start
-```
+- `npm run dev` - Inicia servidor de desarrollo (puerto 3000)
+- `npm run build` - Crea build de producción
+- `npm start` - Inicia servidor de producción
+- `npm run lint` - Ejecuta linter
+- `npm run typecheck` - Verifica tipos TypeScript
 
-## 📁 Estructura del Proyecto
+## 🏗️ Estructura del Proyecto
 
 ```
 frontend/
-├── app/                          # Rutas y layouts de Next.js
+├── app/                          # Rutas y layouts de Next.js (App Router)
 │   ├── layout.js                # Layout principal
 │   ├── page.js                  # Página de inicio
 │   ├── dashboard/               # Módulo Dashboard
@@ -79,16 +87,9 @@ frontend/
 
 ## 🛠️ Tecnologías
 
-- [Next.js](https://nextjs.org) - Framework React
+- [Next.js](https://nextjs.org) - Framework React (App Router)
 - [React](https://react.dev) - Librería UI
 - JavaScript/TypeScript
-
-## 📝 Scripts Disponibles
-
-- `npm run dev` - Inicia servidor de desarrollo
-- `npm run build` - Crea build de producción
-- `npm start` - Inicia servidor de producción
-- `npm run lint` - Ejecuta linter
 
 ## 🔐 Autenticación
 

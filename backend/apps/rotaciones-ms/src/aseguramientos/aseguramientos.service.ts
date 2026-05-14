@@ -10,8 +10,8 @@ export class AseguramientosService {
     return await this.aseguramientosRepo.create({
       id_CircuitoP: createAseguramientoDto.id_CircuitoP,
       CircuitoP: createAseguramientoDto.CircuitoP,
-      fechaInicial: createAseguramientoDto.fechaInicial,
-      fechaFinal: createAseguramientoDto.fechaFinal,
+      fechaInicial: new Date(createAseguramientoDto.fechaInicial),
+      fechaFinal: new Date(createAseguramientoDto.fechaFinal),
       Observaciones: createAseguramientoDto.Observaciones,
       tipo: createAseguramientoDto.tipo,
       mw: createAseguramientoDto.mw,

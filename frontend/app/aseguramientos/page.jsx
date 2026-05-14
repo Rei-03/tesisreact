@@ -163,8 +163,8 @@ export default function AseguramientosPage() {
       const nuevoAseguramiento = {
         id_CircuitoP: Number(formData.id_CircuitoP),
         CircuitoP: circuitoP,
-        fechaInicial: new Date(formData.fechaInicial),
-        fechaFinal: new Date(formData.fechaFinal),
+        fechaInicial: new Date(formData.fechaInicial).toISOString(),
+        fechaFinal: new Date(formData.fechaFinal).toISOString(),
         Observaciones: formData.Observaciones,
         mw: formData.mw ? Number(formData.mw) : null,
         tipo: formData.tipo,
